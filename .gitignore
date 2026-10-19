@@ -1,0 +1,23 @@
+# Secrets and local configuration
+.env
+.env.*
+CLAUDE.local.md
+AGENTS.override.md
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+
+# Build output and the raw mirror cache
+/dist/
+/.cache/
+.shots/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
