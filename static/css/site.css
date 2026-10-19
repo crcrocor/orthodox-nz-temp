@@ -99,12 +99,15 @@ summary:focus-visible,
 
 .masthead-inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-m);
+  gap: var(--space-xs) var(--space-m);
 }
 
+/* The switch drops below the name before the name gets narrower than its longest word. */
 .masthead-inner .brand {
+  flex: 1 1 14rem;
   min-width: 0;
 }
 
@@ -151,7 +154,6 @@ summary:focus-visible,
   width: calc(50% - 3px);
   border-radius: var(--radius-pill);
   background: var(--color-accent);
-  view-transition-name: lang-knob;
 }
 
 .lang-switch[data-lang="ru"] .lang-switch-knob {
@@ -184,7 +186,7 @@ summary:focus-visible,
 @media (prefers-reduced-motion: no-preference) {
   .lang-switch-knob,
   .lang-switch-option {
-    transition: transform var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
+    transition: transform var(--dur-base) var(--ease-out);
   }
 
   .lang-switch[data-lang="en"]:hover .lang-switch-knob,
@@ -197,22 +199,9 @@ summary:focus-visible,
     transform: translateX(88%);
   }
 
-  .lang-switch[data-lang="en"]:active .lang-switch-knob {
-    transform: translateX(100%);
-  }
-
-  .lang-switch[data-lang="ru"]:active .lang-switch-knob {
-    transform: translateX(0);
-  }
-
-  /* Browsers that support cross-document view transitions slide the knob from page to page. */
+  /* Browsers with cross-document view transitions cross-fade from page to page (the knob too). */
   @view-transition {
     navigation: auto;
-  }
-
-  ::view-transition-group(lang-knob) {
-    animation-duration: var(--dur-base);
-    animation-timing-function: var(--ease-out);
   }
 
   ::view-transition-old(root),
@@ -464,6 +453,12 @@ th {
   display: inline-block;
   min-height: 44px;
   padding: var(--space-xs) 0;
+}
+
+@media (forced-colors: active) {
+  .lang-switch-knob {
+    border: 2px solid CanvasText;
+  }
 }
 
 @media print {

@@ -97,6 +97,8 @@ class Mirror:
         self.assets = {}  # static path -> list of (page, link text)
         self.missing = set()
         self.warnings = []
+        # Where downloaded files go: static/, or a scratch folder while a changed frozen page is compared.
+        self.asset_dir = STATIC
 
     # --- network and cache -------------------------------------------------------------------
 
@@ -170,7 +172,7 @@ class Mirror:
         ):
             self.missing.add(target)
             return False
-        out = STATIC / target
+        out = self.asset_dir / target
         if not out.exists() or out.read_bytes() != body:
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(body)
@@ -265,7 +267,7 @@ class Mirror:
                     parent.decompose()
                 continue
             img["src"] = relative(target, page)
-            size = image_size(STATIC / target)
+            size = image_size(self.asset_dir / target)
             if size:
                 img["width"], img["height"] = str(size[0]), str(size[1])
             if img.get("alt", "").strip().lower() in ("", "image"):
@@ -338,16 +340,29 @@ class Mirror:
                 first = (CONTENT / path).read_text(encoding="utf-8").split("\n", 1)[0]
                 now = self.source_hash(path, meta["source"])
                 if now not in first:
-                    # Clean the new source as a mirror page would, so its new files are downloaded and the
-                    # change can be compared and copied into both language versions by hand.
+                    # Clean the new source as a mirror page would, into a scratch folder (files included), so
+                    # the change can be compared and copied into both language versions by hand. Nothing goes
+                    # into static/ or old_paths.txt until a person takes it over.
+                    scratch = CACHE / "frozen"
+                    self.asset_dir = scratch
                     fresh, _, _ = self.mirror_page(path, meta["source"])
-                    copy = CACHE / "frozen" / path
+                    self.asset_dir = STATIC
+                    copy = scratch / path
                     copy.parent.mkdir(parents=True, exist_ok=True)
                     copy.write_text(fresh, encoding="utf-8")
+                    soup = BeautifulSoup(fresh, "html.parser")
+                    new_files = sorted(
+                        ref for el in soup.find_all(["a", "img"])
+                        for ref in [el.get("href") or el.get("src") or ""]
+                        if ref and not urllib.parse.urlsplit(ref).scheme and not ref.endswith(".html")
+                        and not ref.startswith("#") and not (STATIC / ref).exists()
+                    )
                     self.warnings.append(
                         f"{path} is frozen but its source changed on the old site (now sha256 {now}); compare it "
                         f"with {copy.relative_to(ROOT)}, update content/pages/{path} and ru/{path}, then put that "
                         "hash in its first line"
+                        + (f"; new files to copy from {scratch.relative_to(ROOT)}/ into static/: {new_files}"
+                           if new_files else "")
                     )
                 continue
             fragments[path], old, new = self.mirror_page(path, meta["source"])

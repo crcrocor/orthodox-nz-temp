@@ -1,9 +1,9 @@
 # The site: interface strings in both languages, the menu, the footer and every page.
 #
 # Languages: English is the default and lives at the old paths; Russian lives under ru/ with the same
-# paths. A page with a hand-written Russian version has it in content/pages/ru/<path>; every other page
-# (the mirrored ones, bilingual as on the old site) is shown with the same content in both versions and
-# only the interface changes. Links inside page bodies are always written as seen from the English page.
+# paths. Local and frozen pages have their Russian version in content/pages/ru/<path>; the mirrored pages
+# exist in one language only and are shown with the same body in both versions, with the interface in the
+# reader's language and a note. Links inside page bodies are always written as seen from the English page.
 #
 # Page kinds:
 #   mirror — regenerated from orthodox.net.nz by scripts/mirror.py (edit the old site or scripts/corrections.py)
