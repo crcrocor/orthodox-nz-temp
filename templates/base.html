@@ -21,7 +21,11 @@
       <span class="brand-name">{{ ui.name }}</span>
       <span class="brand-line2">{{ ui.name_line2 }}</span>
     </a>
-    <a class="lang-switch" href="{{ here[other_lang] }}" lang="{{ other_lang }}" hreflang="{{ other_lang }}">{{ ui.switch }}</a>
+    <a class="lang-switch" data-lang="{{ lang }}" href="{{ here[other_lang] }}" hreflang="{{ other_lang }}" lang="{{ other_lang }}" aria-label="{{ ui.switch }}" title="{{ ui.switch }}">
+      <span class="lang-switch-knob" aria-hidden="true"></span>
+      <span class="lang-switch-option" aria-hidden="true">EN</span>
+      <span class="lang-switch-option" aria-hidden="true">RU</span>
+    </a>
   </div>
 </header>
 {%- macro menu_groups() %}
@@ -47,9 +51,6 @@
     </nav>
   </details>
   <main id="content" class="content">
-{%- if note %}
-    <p class="note">{{ note }}</p>
-{%- endif %}
 {{ content }}
   </main>
 </div>

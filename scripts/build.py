@@ -184,8 +184,7 @@ def prepare_menu(site, lang, page_root, current):
     return groups, footer
 
 
-def render(env, site, lang, path, body, *, asset_root, page_root, base_url="", title=None, description=None,
-           note=None):
+def render(env, site, lang, path, body, *, asset_root, page_root, base_url="", title=None, description=None):
     """asset_root leads to the site root (CSS, files), page_root to the root of this language's pages."""
     other = "ru" if lang == "en" else "en"
     menu, footer = prepare_menu(site, lang, page_root, path)
@@ -205,7 +204,6 @@ def render(env, site, lang, path, body, *, asset_root, page_root, base_url="", t
         here={code: asset_root + PREFIX[code] + path for code in LANGS},
         alternates={code: base_url.rstrip("/") + "/" + PREFIX[code] + ("" if path == "index.html" else path)
                     for code in LANGS} if base_url and path else None,
-        note=note,
         content=Markup(body),
     )
 
@@ -222,9 +220,11 @@ def render_page(env, site, path, meta, lang, base_url=""):
         h1s[0].string = meta["h1_ru"]
     if lang == "ru":
         localise_links(soup, path)
-    note = None
     if (shared or lang == "en") and script_of(soup.get_text(" ")) not in (None, lang):
-        note = site["ui"][lang]["other_language_note"]
+        # Inside the body, so that foreign words in it get their lang like the rest.
+        note = soup.new_tag("p", attrs={"class": "note"})
+        note.string = meta.get(f"note_{lang}") or site["ui"][lang]["other_language_note"]
+        h1s[0].insert_after(note)
     mark_languages(soup, lang)
     mark_runs(soup, lang)
     return render(
@@ -234,7 +234,6 @@ def render_page(env, site, path, meta, lang, base_url=""):
         base_url=base_url,
         title=" ".join(h1s[0].get_text(" ").split()),
         description=meta.get("description_ru" if lang == "ru" else "description"),
-        note=note,
     )
 
 

@@ -226,8 +226,8 @@ def check_page(path, html, report, base_path, is_404=False, base_url=""):
             report.fail(page, f"Russian text without lang=\"ru\": {text.strip()[:50]!r}")
     if page.startswith("ru/") and soup.body:
         for text in soup.body.find_all(string=re.compile(r"[A-Za-z]{3,}")):
-            if not isinstance(text, Comment) and effective_lang(text, "ru") != "en":
-                report.fail(page, f"English text without lang=\"en\" on a Russian page: {text.strip()[:50]!r}")
+            if not isinstance(text, Comment) and effective_lang(text, "ru") == "ru":
+                report.fail(page, f"Latin-script text without its lang on a Russian page: {text.strip()[:50]!r}")
     for img in soup.find_all("img", alt=CYRILLIC):
         holder = img if img.has_attr("lang") else img.find_parent(lambda t: t.has_attr("lang"))
         if (holder["lang"] if holder else "") != "ru":

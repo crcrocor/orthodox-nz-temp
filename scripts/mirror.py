@@ -331,12 +331,23 @@ class Mirror:
             if "source" not in meta:
                 continue
             if meta["kind"] == "frozen" and (CONTENT / path).exists():
+                # The articles are found through the links of a frozen page too (about_orthodoxy.html).
+                _, root, _ = self.extract(self.fetch_page(meta["source"]), path, False)
+                for a in root.find_all("a", href=re.compile(r"/article/")):
+                    self.resolve(a["href"], path)
                 first = (CONTENT / path).read_text(encoding="utf-8").split("\n", 1)[0]
                 now = self.source_hash(path, meta["source"])
                 if now not in first:
+                    # Clean the new source as a mirror page would, so its new files are downloaded and the
+                    # change can be compared and copied into both language versions by hand.
+                    fresh, _, _ = self.mirror_page(path, meta["source"])
+                    copy = CACHE / "frozen" / path
+                    copy.parent.mkdir(parents=True, exist_ok=True)
+                    copy.write_text(fresh, encoding="utf-8")
                     self.warnings.append(
-                        f"{path} is frozen but its source changed on the old site (now sha256 {now}); "
-                        "merge the change by hand, then put that hash in its first line"
+                        f"{path} is frozen but its source changed on the old site (now sha256 {now}); compare it "
+                        f"with {copy.relative_to(ROOT)}, update content/pages/{path} and ru/{path}, then put that "
+                        "hash in its first line"
                     )
                 continue
             fragments[path], old, new = self.mirror_page(path, meta["source"])

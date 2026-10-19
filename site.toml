@@ -12,7 +12,8 @@
 # A menu item has either `path` (a page of this site) or `url` (another site).
 # `source` is the page's path on orthodox.net.nz; `h1` overrides the heading taken from the old <title>
 # (applied by the mirror); `h1_ru` is the heading of the Russian version of a shared page; `description`
-# and `description_ru` override the default meta description.
+# and `description_ru` override the default meta description; `note_en` / `note_ru` replace the general
+# note on a page that exists in one language only.
 # Articles under article/ are mirror pages found through the links on about_orthodoxy.html.
 
 [site]
@@ -106,56 +107,53 @@ description = "Church of the Resurrection of Christ, Auckland: a parish of the N
 description_ru = "Храм Воскресения Христова в Окланде — приход Новозеландского благочиния Русской Зарубежной Церкви, 455–461 Dominion Rd, Mt Eden."
 
 [pages."schedule.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/schedule"
-h1_ru = "Расписание богослужений"
 
 [pages."news.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/news.html"
-h1_ru = "Новости и фотографии"
 
 [pages."pravmir.html"]
 kind = "mirror"
 source = "/pravmir"
+note_en = "The Russian Newsletter is a weekly parish wall newspaper in Russian from Pravoslavie i Mir (pravmir.ru); each issue opens as a PDF on pravmir.ru."
 h1 = "Russian Newsletter"
 h1_ru = "Стенгазета «Православие и мир»"
 
 [pages."newsletter.html"]
 kind = "mirror"
 source = "/newsletter"
+note_ru = "Еженедельный бюллетень на английском языке; выпуски открываются в формате PDF."
 h1 = "English Bulletin"
 h1_ru = "Бюллетень на английском языке"
 
 [pages."donations.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/donations"
-h1_ru = "Пожертвования"
 
 [pages."benevolent_fund.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/benevolent_fund"
-h1_ru = "Благотворительный фонд"
 
 [pages."school.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/school"
-h1 = "Russian Orthodox Educational Institute"
-h1_ru = "Русский православный образовательный институт"
 
 [pages."creed.html"]
 kind = "mirror"
 source = "/creed"
+note_en = "Lectures on the Symbol of Faith (the Creed), in Russian, published on pravoslavie.ru."
 
 [pages."onlinecatechism.html"]
 kind = "mirror"
 source = "/onlinecatechism"
+note_ru = "Видеоуроки катехизиса на английском языке со священником Иоанном Пеком (YouTube)."
 h1_ru = "Катехизис онлайн"
 
 [pages."about_orthodoxy.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/about_orthodoxy"
-h1_ru = "О Православии"
 
 [pages."clergy.html"]
 kind = "frozen"
@@ -166,9 +164,8 @@ kind = "frozen"
 source = "/contact"
 
 [pages."links.html"]
-kind = "mirror"
+kind = "frozen"
 source = "/links"
-h1_ru = "Ссылки"
 
 [pages."about.html"]
 kind = "local"

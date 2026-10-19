@@ -13,11 +13,11 @@ orthodox.net.nz ──scripts/mirror.py──▶ content/pages/ + static/ ──
 ```
 
 - `site.toml` lists the menu, the footer and every page with its kind:
-  - `mirror` — regenerated from the old site on every mirror run;
-  - `frozen` — copied from the old site once, then edited by hand (the parish page `home.html`, contact, clergy);
+  - `mirror` — regenerated from the old site on every mirror run (pages in one language only: the English bulletin, the Russian newsletter, the Creed lectures, the online catechism and the 53 articles);
+  - `frozen` — copied from the old site once, then split into English and Russian and edited by hand (the parish page `home.html`, schedule, news, donations, benevolent fund, school, about Orthodoxy, links, contact, clergy);
   - `local` — written by hand (the deanery home page `index.html`, about, privacy).
 - `content/pages/` holds the page bodies in English (HTML without header, menu or footer); `content/pages/ru/` holds the Russian versions of the hand-made pages; `templates/base.html` adds the header, menu, language switch and footer; `static/` holds the CSS and the files and images from the old site, under their old paths.
-- Every page is built twice: in English at its path and in Russian under `ru/`. Mirrored pages, bilingual as on the old site, keep the same body in both versions; only the interface (and the heading, `h1_ru` in `site.toml`) changes, and a page in one language only says so.
+- Every page is built twice: in English at its path and in Russian under `ru/`. Local and frozen pages have a Russian file in `content/pages/ru/`. Mirrored pages exist in one language only: both versions show the same body with the interface (and the heading, `h1_ru` in `site.toml`) in the reader's language and a short note (`note_en` / `note_ru`).
 - `scripts/corrections.py` holds the fixes for mirrored pages, so they survive every new mirror run.
 - `old_paths.txt` lists every path the site has ever had. The mirror only adds to it, and the check fails if one of them is missing, so old links keep working.
 - Every push to `main` runs `.github/workflows/pages.yml`: it builds the site, runs all checks and deploys only if they pass.
@@ -51,11 +51,11 @@ uv run scripts/check.py
 git diff --stat
 ```
 
-Read the diff, then commit and push. The mirror fetches one page or file at a time with a pause between requests; the parish owns the old site, so it does not wait the 60 seconds that the old site's robots.txt asks of search engines. It stops when a correction no longer matches or a page loses text, and warns when the source of a frozen page has changed (then copy the change into the frozen page by hand and put the new hash it prints in the page's first line). Nothing is deleted: pages and files the old site no longer links to stay, so their addresses keep working. Temporary errors of the old site are retried, and the mirror stops rather than mark a file as missing.
+Read the diff, then commit and push. The mirror fetches one page or file at a time with a pause between requests; the parish owns the old site, so it does not wait the 60 seconds that the old site's robots.txt asks of search engines. It stops when a correction no longer matches or a page loses text, and warns when the source of a frozen page has changed: it downloads the new files and leaves a cleaned copy of the new source in `.cache/mirror/frozen/`; copy the change into both language versions of the page by hand and put the new hash it prints in the page's first line. The monthly service schedule is such a frozen page, so a new month means two new PDF links in `schedule.html` and `ru/schedule.html`. Nothing is deleted: pages and files the old site no longer links to stay, so their addresses keep working. Temporary errors of the old site are retried, and the mirror stops rather than mark a file as missing.
 
 ## Edit texts
 
-- **Deanery home, About, Privacy** (`local`) and **parish page, Contact, Clergy** (`frozen`): edit `content/pages/<page>.html` (English) and `content/pages/ru/<page>.html` (Russian) and keep them in step. Write links in the Russian file as seen from the English page (`files/x.pdf`, `contact.html`); the build adjusts them. Keep the first line of a frozen page: it records which version of the old page it was copied from.
+- **Local and frozen pages** (deanery home, About, Privacy; the parish page, schedule, news, donations and the rest): edit `content/pages/<page>.html` (English) and `content/pages/ru/<page>.html` (Russian) and keep them in step. Write links in the Russian file as seen from the English page (`files/x.pdf`, `contact.html`); the build adjusts them. Keep the first line of a frozen page: it records which version of the old page it was copied from.
 - **Other pages** (`mirror`): change the text on the old site and refresh, or add a fix to `scripts/corrections.py` (the exact text to find, the replacement, how many times it occurs and why).
 - **Menu, footer, interface texts in both languages and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
 - Facts about the trust come only from the Charities Register; anything unknown is written as a hidden `<!-- TODO(content): … -->`, anything that needs Fr Vladimir's decision as `<!-- needs blessing: … -->`.
