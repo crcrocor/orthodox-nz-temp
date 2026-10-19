@@ -1,108 +1,143 @@
-# Every page of the site. Kinds:
+# The site: interface strings in both languages, the menu, the footer and every page.
+#
+# Languages: English is the default and lives at the old paths; Russian lives under ru/ with the same
+# paths. A page with a hand-written Russian version has it in content/pages/ru/<path>; every other page
+# (the mirrored ones, bilingual as on the old site) is shown with the same content in both versions and
+# only the interface changes. Links inside page bodies are always written as seen from the English page.
+#
+# Page kinds:
 #   mirror — regenerated from orthodox.net.nz by scripts/mirror.py (edit the old site or scripts/corrections.py)
 #   frozen — seeded once by the mirror, then edited by hand in content/pages/ (the mirror never overwrites it)
 #   local  — written by hand in content/pages/
-# `source` is the page's path on orthodox.net.nz; `h1` overrides the heading taken from the old <title>;
-# `lang` overrides the language detected from the text; `aliases` are extra old paths with the same page.
+# `source` is the page's path on orthodox.net.nz; `h1` overrides the heading taken from the old <title>
+# (applied by the mirror); `h1_ru` is the heading of the Russian version of a shared page; `description`
+# and `description_ru` override the default meta description.
 # Articles under article/ are mirror pages found through the links on about_orthodoxy.html.
 
 [site]
-name = "Resurrection of Christ Russian Orthodox Church"
-name_ru = "Храм Воскресения Христова в Окланде"
 legal_name = "Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust"
 charity_number = "CC42458"
 register_url = "https://register.charities.govt.nz/Charity/CC42458"
-description = "Russian Orthodox parish of the Resurrection of Christ (Russian Orthodox Church Outside of Russia), 455–461 Dominion Rd, Mt Eden, Auckland."
 old_site = "https://orthodox.net.nz"
 
-# The menu of the old site, in its order and with its labels.
+[ui.en]
+name = "New Zealand Deanery"
+name_line2 = "of the Russian Orthodox Church Outside of Russia"
+title_suffix = "New Zealand Deanery of ROCOR"
+description = "New Zealand Deanery of the Russian Orthodox Church Outside of Russia (ROCOR), Australian and New Zealand Diocese."
+skip = "Skip to content"
+menu = "Menu"
+switch = "Русский"
+footer_published = "This website is published by the"
+footer_charity = "registered charity"
+other_language_note = "This page is available in Russian only."
+not_found_title = "Page not found"
+not_found_text = "This page does not exist. Please start from the"
+not_found_link = "home page"
+
+[ui.ru]
+name = "Новозеландское благочиние"
+name_line2 = "Русской Зарубежной Церкви"
+title_suffix = "Новозеландское благочиние РПЦЗ"
+description = "Новозеландское благочиние Русской Зарубежной Церкви, Австралийско-Новозеландская епархия."
+skip = "Перейти к содержанию"
+menu = "Меню"
+switch = "English"
+footer_published = "Сайт ведёт благотворительный траст"
+footer_charity = "номер в реестре благотворительных организаций"
+other_language_note = "Эта страница есть только на английском языке."
+not_found_title = "Страница не найдена"
+not_found_text = "Такой страницы нет. Начните, пожалуйста, с"
+not_found_link = "главной страницы"
+
+# The menu, in groups. Labels are the old site's where it had them.
 [[menu]]
-label = "Home"
-path = "index.html"
+items = [
+    { path = "index.html", en = "Home", ru = "Главная" },
+]
+
 [[menu]]
-label = "Service Schedule"
-path = "schedule.html"
+title = { en = "Church of the Resurrection of Christ, Auckland", ru = "Храм Воскресения Христова, Окланд" }
+items = [
+    { path = "home.html", en = "The parish", ru = "О приходе" },
+    { path = "schedule.html", en = "Service Schedule", ru = "Расписание богослужений" },
+    { path = "news.html", en = "News and Photos", ru = "Новости и фотографии" },
+    { path = "pravmir.html", en = "Russian Newsletter", ru = "Стенгазета «Православие и мир»" },
+    { path = "newsletter.html", en = "English Bulletin", ru = "Бюллетень на английском" },
+    { path = "donations.html", en = "Donations", ru = "Пожертвования" },
+    { path = "benevolent_fund.html", en = "Benevolent Fund", ru = "Благотворительный фонд" },
+    { path = "school.html", en = "Russian Orthodox School", ru = "Русская православная школа" },
+    { path = "clergy.html", en = "Clergy", ru = "Духовенство" },
+    { path = "contact.html", en = "Contact Information", ru = "Контакты" },
+]
+
 [[menu]]
-label = "News and Photos"
-path = "news.html"
-[[menu]]
-label = "Russian Newsletter"
-path = "pravmir.html"
-[[menu]]
-label = "English Bulletin"
-path = "newsletter.html"
-[[menu]]
-label = "Donations"
-path = "donations.html"
-[[menu]]
-label = "Benevolent Fund"
-path = "benevolent_fund.html"
-[[menu]]
-label = "Russian Orthodox School"
-path = "school.html"
-[[menu]]
-label = "Символ Веры"
-path = "creed.html"
-lang = "ru"
-[[menu]]
-label = "Online Catechism"
-path = "onlinecatechism.html"
-[[menu]]
-label = "About Orthodoxy"
-path = "about_orthodoxy.html"
-[[menu]]
-label = "Clergy"
-path = "clergy.html"
-[[menu]]
-label = "Contact Information"
-path = "contact.html"
-[[menu]]
-label = "Links"
-path = "links.html"
+title = { en = "The Orthodox faith", ru = "Православная вера" }
+items = [
+    { path = "about_orthodoxy.html", en = "About Orthodoxy", ru = "О Православии" },
+    { path = "creed.html", en = "Символ Веры", ru = "Символ веры" },
+    { path = "onlinecatechism.html", en = "Online Catechism", ru = "Катехизис онлайн" },
+    { path = "links.html", en = "Links", ru = "Ссылки" },
+]
 
 [[footer]]
-label = "About"
 path = "about.html"
+en = "About"
+ru = "О нас"
 [[footer]]
-label = "Contact"
 path = "contact.html"
+en = "Contact"
+ru = "Контакты"
 [[footer]]
-label = "Privacy"
 path = "privacy.html"
+en = "Privacy"
+ru = "Конфиденциальность"
 
 [pages."index.html"]
+kind = "local"
+
+[pages."home.html"]
 kind = "frozen"
 source = "/"
-h1 = "Resurrection of Christ Russian Orthodox Church"
-aliases = ["home.html"]
+description = "Church of the Resurrection of Christ, Auckland: a parish of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, 455–461 Dominion Rd, Mt Eden."
+description_ru = "Храм Воскресения Христова в Окланде — приход Новозеландского благочиния Русской Зарубежной Церкви, 455–461 Dominion Rd, Mt Eden."
 
 [pages."schedule.html"]
 kind = "mirror"
 source = "/schedule"
+h1_ru = "Расписание богослужений"
 
 [pages."news.html"]
 kind = "mirror"
 source = "/news.html"
+h1_ru = "Новости и фотографии"
 
 [pages."pravmir.html"]
 kind = "mirror"
 source = "/pravmir"
+h1 = "Russian Newsletter"
+h1_ru = "Стенгазета «Православие и мир»"
 
 [pages."newsletter.html"]
 kind = "mirror"
 source = "/newsletter"
+h1 = "English Bulletin"
+h1_ru = "Бюллетень на английском языке"
 
 [pages."donations.html"]
 kind = "mirror"
 source = "/donations"
+h1_ru = "Пожертвования"
 
 [pages."benevolent_fund.html"]
 kind = "mirror"
 source = "/benevolent_fund"
+h1_ru = "Благотворительный фонд"
 
 [pages."school.html"]
 kind = "mirror"
 source = "/school"
+h1_ru = "Русская православная школа"
 
 [pages."creed.html"]
 kind = "mirror"
@@ -115,6 +150,7 @@ source = "/onlinecatechism"
 [pages."about_orthodoxy.html"]
 kind = "mirror"
 source = "/about_orthodoxy"
+h1_ru = "О Православии"
 
 [pages."clergy.html"]
 kind = "frozen"
@@ -127,11 +163,14 @@ source = "/contact"
 [pages."links.html"]
 kind = "mirror"
 source = "/links"
+h1_ru = "Ссылки"
 
 [pages."about.html"]
 kind = "local"
-description = "Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust, registered charity CC42458: who runs this website, its purpose and how to reach us."
+description = "Who publishes this website: the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust, registered charity CC42458."
+description_ru = "Кто ведёт этот сайт: благотворительный траст Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (CC42458)."
 
 [pages."privacy.html"]
 kind = "local"
-description = "Privacy policy of the website of the Church of the Resurrection of Christ, Auckland."
+description = "Privacy policy of the website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia."
+description_ru = "Политика конфиденциальности сайта Новозеландского благочиния Русской Зарубежной Церкви."

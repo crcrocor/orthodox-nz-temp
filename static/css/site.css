@@ -91,6 +91,14 @@ summary:focus-visible {
   padding: var(--space-m) 0;
 }
 
+.masthead-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-l);
+}
+
 .brand {
   display: inline-block;
   color: var(--color-ink);
@@ -104,17 +112,40 @@ summary:focus-visible {
   line-height: 1.25;
 }
 
-.brand-name-ru {
+.brand-line2 {
   display: block;
   color: var(--color-ink-muted);
   line-height: 1.4;
 }
 
+.lang-switch {
+  display: inline-block;
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-s);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  line-height: 1.6;
+  text-decoration: none;
+}
+
+.lang-switch:hover {
+  text-decoration: underline;
+}
+
 /* Layout: menu column beside the text on wide screens, a disclosure on phones */
 .menu ul {
   list-style: none;
-  margin: 0;
+  margin: 0 0 var(--space-m);
   padding: 0;
+}
+
+.menu-group {
+  margin: var(--space-s) 0 var(--space-2xs);
+  padding: 0 var(--space-s);
+  color: var(--color-ink-muted);
+  font-size: var(--step--1);
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .menu a {
@@ -177,6 +208,12 @@ summary:focus-visible {
   .menu-narrow {
     display: none;
   }
+}
+
+.note {
+  padding: var(--space-xs) var(--space-s);
+  background: var(--color-surface);
+  border-radius: var(--radius);
 }
 
 /* Text */

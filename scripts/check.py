@@ -4,7 +4,8 @@ Usage: uv run scripts/check.py [--base-path /orthodox-nz-temp]
 
 Checks: every path in old_paths.txt exists; nothing points at orthodox.net.nz; no third-party resources,
 scripts or forms; every internal link is relative and resolves; the CSS budget; page structure, heading
-order, language marking and the footer; known stale facts are gone and required facts are present. Then
+order, language marking, the language switch and the footer of both versions; known stale facts are gone
+and required facts are present. Then
 lists every TODO(content) and "needs blessing:" marker.
 """
 
@@ -44,17 +45,19 @@ PURPOSE = (
     "on the greater Auckland area, with some outreach into the broader community. Where possible, material aid "
     "is also proffered."
 )
+REGISTER = ["https://register.charities.govt.nz/Charity/CC42458", "https://register.charities.govt.nz/Charity/CC33927"]
+CONTACTS = ["455–461 Dominion Rd", "Mt Eden, Auckland 1024", "+64 21 260 9247", "mailto:info@orthodox.nz"]
 REQUIRED = {
-    "clergy.html": ["Archbishop George (Schaefer)", "Архиепископ Георгий (Шефер)", "Metropolitan Nicholas (Olhovsky)"],
-    "about.html": [
-        PURPOSE,
-        "https://register.charities.govt.nz/Charity/CC42458",
-        "https://register.charities.govt.nz/Charity/CC33927",
-        "455–461 Dominion Rd",
-        "info@orthodox.nz",
-    ],
-    "contact.html": ["455–461 Dominion Rd", "Mt Eden, Auckland 1024", "+64 21 260 9247", "mailto:info@orthodox.nz"],
+    "index.html": ["New Zealand Deanery of the Russian Orthodox Church Outside of Russia", "Archbishop George (Schaefer)"],
+    "ru/index.html": ["Новозеландское благочиние", "архиепископ Георгий (Шефер)"],
+    "clergy.html": ["Archbishop George (Schaefer)", "Metropolitan Nicholas (Olhovsky)"],
+    "ru/clergy.html": ["Архиепископ Георгий (Шефер)", "Митрополит Николай (Ольховский)"],
+    "about.html": [PURPOSE, *REGISTER, "455–461 Dominion Rd", "info@orthodox.nz", "New Zealand Deanery"],
+    "ru/about.html": [*REGISTER, "455–461 Dominion Rd", "info@orthodox.nz", "Новозеландского благочиния"],
+    "contact.html": CONTACTS,
+    "ru/contact.html": CONTACTS,
     "privacy.html": ["info@orthodox.nz", "GitHub Pages"],
+    "ru/privacy.html": ["info@orthodox.nz", "GitHub Pages"],
 }
 MARKER = re.compile(r"(TODO\(content\)|needs blessing):\s*(.*)", re.S)
 
@@ -236,14 +239,29 @@ def check_page(path, html, report, base_path, is_404=False):
         report.fail(page, "footer lacks the legal name")
     if not footer or not footer.find("a", href="https://register.charities.govt.nz/Charity/CC42458", string="CC42458"):
         report.fail(page, "footer lacks CC42458 linked to the Charities Register")
+    version = "ru" if page.startswith("ru/") else "en"
+    prefix = "ru/" if version == "ru" else ""
     for name in ("about.html", "contact.html", "privacy.html"):
         if not footer or not any(
-            resolve(a["href"], page, base_path) == name for a in footer.find_all("a", href=True) if is_local(a["href"])
+            resolve(a["href"], page, base_path) == prefix + name
+            for a in footer.find_all("a", href=True) if is_local(a["href"])
         ):
-            report.fail(page, f"footer lacks a link to {name}")
+            report.fail(page, f"footer lacks a link to {prefix + name}")
 
+    if soup.html and soup.html.get("lang") != version and not is_404:
+        report.fail(page, f'<html lang="{soup.html.get("lang")}"> on the {version} version')
+    switch = soup.find("a", class_="lang-switch")
+    counterpart = ("index.html" if is_404 else page.removeprefix("ru/")) if version == "ru" or is_404 else "ru/" + page
+    if is_404:
+        counterpart = "ru/index.html"
+    if not switch or resolve(switch["href"], page, base_path) != counterpart:
+        report.fail(page, f"the language switch must lead to {counterpart}")
+    elif not (DIST / counterpart).is_file():
+        report.fail(page, f"the language switch leads to a missing page {counterpart}")
+
+    text = " ".join(soup.get_text(" ").split())
     for needle in REQUIRED.get(page, []):
-        if needle not in html:
+        if needle not in html and needle not in text:
             report.fail(page, f"required text missing: {needle[:70]!r}")
     return img_bytes
 

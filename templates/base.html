@@ -3,48 +3,59 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ title }}{% if not is_home %} | {{ site.name }}{% endif %}</title>
+<title>{{ title }}{% if not is_home %} | {{ ui.title_suffix }}{% endif %}</title>
 <meta name="description" content="{{ description }}">
 <meta name="color-scheme" content="light">
-<link rel="stylesheet" href="{{ root }}css/site.css">
+<link rel="stylesheet" href="{{ asset_root }}css/site.css">
+<link rel="alternate" hreflang="en" href="{{ here.en }}">
+<link rel="alternate" hreflang="ru" href="{{ here.ru }}">
 </head>
 <body>
-<a class="skip" href="#content" lang="en">Skip to content</a>
+<a class="skip" href="#content">{{ ui.skip }}</a>
 <header class="masthead">
-  <div class="wrap">
-  <a class="brand" href="{{ root }}index.html">
-    <span class="brand-name" lang="en">{{ site.name }}</span>
-    <span class="brand-name-ru" lang="ru">{{ site.name_ru }}</span>
-  </a>
+  <div class="wrap masthead-inner">
+    <a class="brand" href="{{ page_root }}index.html">
+      <span class="brand-name">{{ ui.name }}</span>
+      <span class="brand-line2">{{ ui.name_line2 }}</span>
+    </a>
+    <a class="lang-switch" href="{{ here[other_lang] }}" lang="{{ other_lang }}" hreflang="{{ other_lang }}">{{ ui.switch }}</a>
   </div>
 </header>
-{%- macro menu_items() %}
-  {%- for item in menu %}
-    <li><a href="{{ root }}{{ item.path }}"{% if item.get("lang") %} lang="{{ item.lang }}"{% endif %}{% if item.path == current %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+{%- macro menu_groups() %}
+  {%- for group in menu %}
+    {%- if group.title %}
+    <p class="menu-group">{{ group.title }}</p>
+    {%- endif %}
+    <ul>
+    {%- for item in group["items"] %}
+      <li><a href="{{ item.href }}"{% if item.lang %} lang="{{ item.lang }}"{% endif %}{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+    {%- endfor %}
+    </ul>
   {%- endfor %}
 {%- endmacro %}
 <div class="layout wrap">
-  <nav class="menu menu-wide" aria-label="Menu" lang="en">
-    <ul>{{ menu_items() }}
-    </ul>
+  <nav class="menu menu-wide" aria-label="{{ ui.menu }}">
+    {{- menu_groups() }}
   </nav>
   <details class="menu menu-narrow">
-    <summary><span lang="en">Menu</span> <span lang="ru">Меню</span></summary>
-    <nav aria-label="Menu" lang="en">
-      <ul>{{ menu_items() }}
-      </ul>
+    <summary>{{ ui.menu }}</summary>
+    <nav aria-label="{{ ui.menu }}">
+      {{- menu_groups() }}
     </nav>
   </details>
   <main id="content" class="content">
+{%- if note %}
+    <p class="note">{{ note }}</p>
+{%- endif %}
 {{ content }}
   </main>
 </div>
-<footer class="site-footer" lang="en">
+<footer class="site-footer">
   <div class="wrap">
-  <p>{{ site.legal_name }}, registered charity <a href="{{ site.register_url }}">{{ site.charity_number }}</a></p>
+  <p>{{ ui.footer_published }} {% if lang != "en" %}<span lang="en">{{ site.legal_name }}</span>{% else %}{{ site.legal_name }}{% endif %}, {{ ui.footer_charity }} <a href="{{ site.register_url }}">{{ site.charity_number }}</a>.</p>
   <ul class="footer-links">
     {%- for item in footer %}
-    <li><a href="{{ root }}{{ item.path }}"{% if item.path == current %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+    <li><a href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
     {%- endfor %}
   </ul>
   </div>

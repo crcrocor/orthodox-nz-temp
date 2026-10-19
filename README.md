@@ -1,9 +1,9 @@
 # orthodox-nz-temp
 
-Temporary website of the Church of the Resurrection of Christ, Auckland (Russian Orthodox Church Outside of Russia), published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458).
+Temporary website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458), the trust of the deanery's parish in Auckland.
 
 - Now: https://crcrocor.github.io/orthodox-nz-temp/ — later at https://orthodox.nz/ (planned, after Fr Vladimir's blessing).
-- What it is: a copy of the old parish site orthodox.net.nz on one neutral template, plus the About, Contact and Privacy pages. The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).
+- What it is: a deanery home page, a copy of the old Auckland parish site orthodox.net.nz on one neutral template, and the About, Contact and Privacy pages, in English (default) and Russian (under `ru/`). The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).
 - Rules for people and agents: [AGENTS.md](AGENTS.md).
 
 ## How it is built
@@ -14,9 +14,10 @@ orthodox.net.nz ──scripts/mirror.py──▶ content/pages/ + static/ ──
 
 - `site.toml` lists the menu, the footer and every page with its kind:
   - `mirror` — regenerated from the old site on every mirror run;
-  - `frozen` — copied from the old site once, then edited by hand (home, contact, clergy);
-  - `local` — written by hand (about, privacy).
-- `content/pages/` holds the page bodies (HTML without header, menu or footer); `templates/base.html` adds those; `static/` holds the CSS and the files and images from the old site, under their old paths.
+  - `frozen` — copied from the old site once, then edited by hand (the parish page `home.html`, contact, clergy);
+  - `local` — written by hand (the deanery home page `index.html`, about, privacy).
+- `content/pages/` holds the page bodies in English (HTML without header, menu or footer); `content/pages/ru/` holds the Russian versions of the hand-made pages; `templates/base.html` adds the header, menu, language switch and footer; `static/` holds the CSS and the files and images from the old site, under their old paths.
+- Every page is built twice: in English at its path and in Russian under `ru/`. Mirrored pages, bilingual as on the old site, keep the same body in both versions; only the interface (and the heading, `h1_ru` in `site.toml`) changes, and a page in one language only says so.
 - `scripts/corrections.py` holds the fixes for mirrored pages, so they survive every new mirror run.
 - `old_paths.txt` lists every path the site has ever had. The mirror only adds to it, and the check fails if one of them is missing, so old links keep working.
 - Every push to `main` runs `.github/workflows/pages.yml`: it builds the site, runs all checks and deploys only if they pass.
@@ -54,9 +55,9 @@ Read the diff, then commit and push. The mirror fetches one page or file at a ti
 
 ## Edit texts
 
-- **About, Privacy** (`local`) and **home, Contact, Clergy** (`frozen`): edit `content/pages/<page>.html` directly. Keep the first line of a frozen page: it records which version of the old page it was copied from.
+- **Deanery home, About, Privacy** (`local`) and **parish page, Contact, Clergy** (`frozen`): edit `content/pages/<page>.html` (English) and `content/pages/ru/<page>.html` (Russian) and keep them in step. Write links in the Russian file as seen from the English page (`files/x.pdf`, `contact.html`); the build adjusts them. Keep the first line of a frozen page: it records which version of the old page it was copied from.
 - **Other pages** (`mirror`): change the text on the old site and refresh, or add a fix to `scripts/corrections.py` (the exact text to find, the replacement, how many times it occurs and why).
-- **Menu, footer and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
+- **Menu, footer, interface texts in both languages and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
 - Facts about the trust come only from the Charities Register; anything unknown is written as a hidden `<!-- TODO(content): … -->`, anything that needs Fr Vladimir's decision as `<!-- needs blessing: … -->`.
 
 Then run `uv run scripts/check.py`, commit and push. Until the custom domain is connected we work directly in `main`; after that, only through pull requests.

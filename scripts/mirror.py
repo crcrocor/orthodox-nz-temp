@@ -384,11 +384,14 @@ class Mirror:
             self.warnings.append(f"kept static/{rel}: no page links to it any more")
 
     def record_old_paths(self):
-        """Add every page and file path of the site to old_paths.txt; paths are never removed from it."""
+        """Add every page and file path of the site to old_paths.txt; paths are never removed from it.
+
+        Every page exists in English at its path and in Russian under ru/ (see scripts/build.py).
+        """
         known = set(OLD_PATHS.read_text(encoding="utf-8").split()) if OLD_PATHS.exists() else set()
-        current = {p.relative_to(CONTENT).as_posix() for p in CONTENT.rglob("*.html")}
-        for meta in self.site["pages"].values():
-            current.update(meta.get("aliases", []))
+        pages = {p.relative_to(CONTENT).as_posix() for p in CONTENT.rglob("*.html")}
+        current = {p for p in pages if not p.startswith("ru/")}
+        current |= {"ru/" + p for p in current}
         current.update(rel for rel in static_files() if not rel.startswith("css/"))
         if not current <= known:
             OLD_PATHS.write_text("\n".join(sorted(known | current)) + "\n", encoding="utf-8")
@@ -416,7 +419,8 @@ def linked_paths():
     used = set()
     for page in CONTENT.rglob("*.html"):
         soup = BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
-        base = posixpath.dirname(page.relative_to(CONTENT).as_posix())
+        # Russian versions link as seen from their English page.
+        base = posixpath.dirname(page.relative_to(CONTENT).as_posix().removeprefix("ru/"))
         for el in soup.find_all(["a", "img"]):
             ref = el.get("href") or el.get("src") or ""
             if ref and not urllib.parse.urlsplit(ref).scheme and not ref.startswith("#"):
