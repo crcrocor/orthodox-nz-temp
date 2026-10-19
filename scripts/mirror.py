@@ -14,6 +14,7 @@ scripts/check.py requires to exist.
 
 import argparse
 import codecs
+import http.client
 import hashlib
 import json
 import posixpath
@@ -142,7 +143,7 @@ class Mirror:
                         status = 404  # the old site answers a missing file with its HTML error page
             except urllib.error.HTTPError as e:
                 status, body = e.code, e.read()
-            except (urllib.error.URLError, TimeoutError) as e:
+            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as e:
                 status, body = None, str(e).encode()
             self.last_request = time.monotonic()
             if status in FINAL_STATUSES:
@@ -252,11 +253,12 @@ class Mirror:
                 a.unwrap()
 
     def rewrite_images(self, root, page):
+        removed = []
         for img in root.find_all("img"):
             kind, target = self.resolve(img.get("src", ""), page)
             if kind != "asset":
                 if kind == "external":
-                    self.warnings.append(f"{page}: removed a third-party image {target}")
+                    removed.append(urllib.parse.urlsplit(target).netloc)
                 parent = img.parent
                 img.decompose()
                 if parent and parent.name == "a" and not has_content(parent):
@@ -274,6 +276,10 @@ class Mirror:
                     img["alt"] = ""
                     img.insert_after(Comment(" TODO(content): alt text for this image "))
             img["loading"] = "lazy"
+        if removed:
+            hosts = ", ".join(sorted(set(removed)))
+            root.append(Comment(f" TODO(content): {len(removed)} images hosted on other sites were removed (no "
+                                f"third-party resources): {hosts}; host our own copy if any of them matters ")) 
 
     # --- pages ------------------------------------------------------------------------------
 
@@ -442,6 +448,8 @@ def clean(soup, root, page):
         c.extract()
     for tag in root.find_all(EMBEDS):
         src = tag.get("src") or tag.get("data") or (tag.find("source") or {}).get("src", "")
+        if urllib.parse.urlsplit(src).netloc in OLD_HOSTS:
+            src = urllib.parse.urlsplit(src).path
         tag.insert_before(Comment(f" TODO(content): embedded <{tag.name}> {src} removed (no third-party resources) "))
     for tag in root.find_all(DROP):
         tag.decompose()
@@ -546,6 +554,7 @@ def flatten_div(soup, div):
     for run in runs:
         if isinstance(run, list):
             if not any(has_content(n) for n in run):
+                replacement.extend(n.extract() for n in run if isinstance(n, Comment))  # keep TODO notes
                 continue
             for part in split_on_double_br(soup, run):
                 p = soup.new_tag("p")

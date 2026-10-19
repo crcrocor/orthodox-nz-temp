@@ -270,6 +270,16 @@ figcaption {
 table {
   border-collapse: collapse;
   width: 100%;
+  /* Same column widths in every table of a page (links.html has one per group). */
+  table-layout: fixed;
+}
+
+.content > table {
+  max-width: none;
+}
+
+td:first-child:not([colspan]) {
+  width: 45%;
 }
 
 td,

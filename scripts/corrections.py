@@ -21,7 +21,9 @@ CORRECTIONS = [
     {
         "page": "about_orthodoxy.html",
         "find": "<h1>About Orthodoxy</h1>",
-        "replace": "<h1>About Orthodoxy</h1>\n<!-- needs blessing: 52 of the 53 linked articles (article/…) are excerpts from "
+        "replace": "<h1>About Orthodoxy</h1>\n<!-- TODO(content): the articles are scanned text from the old site; the "
+        "certain scanning errors are fixed in scripts/corrections.py, but they need a proofread if they stay -->"
+        "\n<!-- needs blessing: 52 of the 53 linked articles (article/…) are excerpts from "
         "'These Truths We Hold – The Holy Orthodox Church: Her Life and Teachings' (© 1986 St Tikhon's Seminary Press), "
         "republished from the old site with no known permission; 'The Divine Liturgy' has no credit line; keep, ask "
         "St Tikhon's, or remove? (mirrored as on the old site, 2026-10-19) -->\n<!-- TODO(content): the St Tikhon's "
@@ -62,6 +64,14 @@ CORRECTIONS = [
         "count": 1,
         "why": "the event details exist only in the image",
     },
+    {
+        "page": "news.html",
+        "find": '<p><a href="images/The-legacy-of-kindness.png"><img ',
+        "replace": "<p><img ",
+        "count": 1,
+        "why": "the 'full size' image the poster linked to is smaller than the poster itself",
+    },
+    {"page": "news.html", "find": 'width="576"/></a></p>', "replace": 'width="576"/></p>', "count": 1, "why": "as above"},
     {
         "page": "news.html",
         "find": "<h2>Festival of Kindness</h2>",
@@ -171,6 +181,21 @@ CORRECTIONS = [
         ("The+New+Testament.html", "nor a6outyour body, what you shod put on", "nor about your body, what you shall put on"),
         ("Where+to+Find.html", "not wont", "not want"),
         ("Where+to+Find.html", "de down in green", "lie down in green"),
+        ("Where+to+Find.html", "I shall dwetl in", "I shall dwell in"),
+        ("The+New+Testament.html", "about your fife", "about your life"),
+        ("The+New+Testament.html", "Look at the fords of the air", "Look at the birds of the air"),
+        ("The+New+Testament.html", "span of fife", "span of life"),
+        ("The+New+Testament.html", "lilies of the field) how", "lilies of the field, how"),
+        ("The+New+Testament.html", "toil nor spin) yet", "toil nor spin; yet"),
+        ("The+New+Testament.html", "loses his fife", "loses his life"),
+        ("The+New+Testament.html", "that/aitfi by itself", "that faith by itself"),
+        ("The+Divine+Liturgy.html", "unto fife everlasting", "unto life everlasting"),
+        ("Great+Lent+and+Pascha.html", "The table is fully-laden) all of you", "The table is fully-laden; all of you"),
+        ("Icons+of+the+Mother+of+God.html", "llth-12th", "11th-12th"),
+        ("A+History+of+the+Orthodox+Church.html", "Phllokalia", "Philokalia"),
+        ("The+Old+Testament+Apocrypha.html", "Deutero-canonicalas contrasted", "Deutero-canonical as contrasted"),
+        ("The+Other+Symbols.html", "Nazaremus Rex Indaeorum", "Nazarenus Rex Iudaeorum"),
+        ("The+Churchs+Prayer+for+the+Dead.html", "Komvoschoinlon", "Komvoschoinion"),
     ]
 ] + [
     {

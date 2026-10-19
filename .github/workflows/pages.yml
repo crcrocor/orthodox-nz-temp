@@ -12,8 +12,9 @@ permissions:
   contents: read
 
 # One deployment at a time; a newer push waits instead of cancelling a deployment half-way.
+# Pull request checks have their own group, so they never cancel a waiting deployment.
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'pages' }}
   cancel-in-progress: false
 
 jobs:
