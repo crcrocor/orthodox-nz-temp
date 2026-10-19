@@ -46,6 +46,7 @@ RUNS = {
     "en": re.compile(r"[A-Za-z](?:[^Ѐ-ӿ<>]*[A-Za-z])?[\".!?)…]*"),
 }
 LATIN_WORD = re.compile(r"[A-Za-z]{3,}")
+URL_TEXT = re.compile(r"(?:https?://|www\.)\S+")
 
 
 def load_site():
@@ -123,6 +124,62 @@ def mark_runs(soup, page_lang):
         lang = script_of(img["alt"])
         if lang and lang != effective_lang(img, page_lang):
             img["lang"] = lang
+
+
+def url_pieces(url):
+    """A URL cut where a line may break: after a single '/', before '.', '-', '_', '?' and '='."""
+    pieces, start = [], 0
+    for i, ch in enumerate(url):
+        if i and ch in ".-_?=":
+            pieces.append(url[start:i])
+            start = i
+        elif ch == "/" and url[i - 1:i] not in ("/", ":") and url[i + 1:i + 2] != "/":
+            pieces.append(url[start:i + 1])
+            start = i + 1
+    pieces.append(url[start:])
+    return [p for p in pieces if p]
+
+
+def bold_only(tag):
+    """A <p> whose only content is one <strong> or <b>."""
+    children = [c for c in tag.contents if not (isinstance(c, NavigableString) and not c.strip())]
+    return tag.name == "p" and len(children) == 1 and isinstance(children[0], Tag) and children[0].name in ("strong", "b")
+
+
+def typeset(soup, path):
+    """Typography that the old pages' markup gets wrong, fixed without changing a word."""
+    # Bare URLs in tables (links.html) break at their slashes and dots, not in the middle of a word.
+    for a in soup.select("td a"):
+        strings = [s for s in a.find_all(string=True) if s.strip()]
+        if len(strings) == 1 and str(strings[0]) == strings[0].strip() and URL_TEXT.fullmatch(strings[0]):
+            nodes = []
+            for k, piece in enumerate(url_pieces(str(strings[0]))):
+                if k:
+                    nodes.append(soup.new_tag("wbr"))
+                nodes.append(NavigableString(piece))
+            strings[0].replace_with(*nodes)
+    # The old site's bold initial ("<strong>O</strong>ne of the first…") reads as a typo without its drop cap.
+    for strong in soup.find_all(["strong", "b"]):
+        after = strong.next_sibling
+        if (strong.parent.name == "p" and strong.previous_sibling is None and len(strong.get_text()) == 1
+                and strong.get_text().isalpha() and isinstance(after, NavigableString) and after[:1].islower()):
+            strong.unwrap()
+    # In the articles a bold-only paragraph between ordinary ones is a run-in head (a glossary term, a
+    # name in a list): it gets the spacing of a heading. Runs of them (a prayer quoted line by line) do not.
+    if path.startswith("article/"):
+        for p in soup.find_all("p"):
+            if bold_only(p) and not any(
+                isinstance(n, Tag) and bold_only(n) for n in (p.find_previous_sibling(), p.find_next_sibling())
+            ):
+                p["class"] = p.get("class", []) + ["run-in"]
+    # Chrome < 114, Firefox < 121 and Safari < 17.5 ignore text-wrap: balance, so a heading can end on a
+    # lone word. Tie its last two words when together they fit a phone line.
+    for h in soup.find_all(["h1", "h2", "h3"]):
+        texts = [s for s in h.find_all(string=True) if s.strip() and not isinstance(s, Comment)]
+        if texts:
+            m = re.fullmatch(r"(.*?)(\S+) (\S+)(\s*)", str(texts[-1]), re.S)
+            if m and len(m[2]) + 1 + len(m[3]) <= 16:
+                texts[-1].replace_with(NavigableString(f"{m[1]}{m[2]}\u00a0{m[3]}{m[4]}"))
 
 
 def pages(site):
@@ -227,6 +284,7 @@ def render_page(env, site, path, meta, lang, base_url=""):
         h1s[0].insert_after(note)
     mark_languages(soup, lang)
     mark_runs(soup, lang)
+    typeset(soup, path)
     return render(
         env, site, lang, path, str(soup).strip(),
         asset_root="../" * (path.count("/") + (lang == "ru")),

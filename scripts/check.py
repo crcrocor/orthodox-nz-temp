@@ -3,7 +3,7 @@
 Usage: uv run scripts/check.py [--base-path /orthodox-nz-temp] [--base-url https://crcrocor.github.io/orthodox-nz-temp]
 
 Checks: every path in old_paths.txt exists; nothing points at orthodox.net.nz; no third-party resources,
-scripts or forms; every internal link is relative and resolves; the CSS budget; page structure, heading
+scripts or forms; every internal link is relative and resolves; the CSS and font budgets; page structure, heading
 order, language marking, the language switch and the footer of both versions; known stale facts are gone
 and required facts are present. Then
 lists every TODO(content) and "needs blessing:" marker.
@@ -23,9 +23,13 @@ from bs4 import BeautifulSoup, Comment
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build import CONTENT, CYRILLIC, DIST, ROOT, STATIC, build, effective_lang  # noqa: E402
 
-# gzip bytes per page (orthodox-nz docs/design/compat.md). The JS budget (50 KB) needs no measuring:
+# Budgets per page (orthodox-nz docs/design/compat.md): CSS in gzip bytes; fonts at most two families and
+# four WOFF2 files of this site, with their licence beside them. The JS budget (50 KB) needs no measuring:
 # any <script> fails the check.
 CSS_BUDGET = 40 * 1024
+FONT_FAMILIES = 2
+FONT_FILES = 4
+FONT_LICENCES = ("OFL.txt",)
 OLD_DOMAIN = "orthodox.net.nz"
 RESOURCE_ATTRS = ("src", "srcset", "poster", "data", "background", "action", "formaction")
 FORBIDDEN_TAGS = ("script", "form", "iframe", "object", "embed", "audio", "video", "source", "track", "base",
@@ -101,15 +105,46 @@ def css_urls(css):
 
 
 def check_css_file(path, report):
+    """Check a stylesheet; return the dist paths it loads (fonts), which count as linked."""
     css = path.read_text(encoding="utf-8")
     rel = path.relative_to(DIST).as_posix()
     if OLD_DOMAIN in css:
         report.fail(rel, f"mentions {OLD_DOMAIN}")
-    if "@font-face" in css:
-        report.fail(rel, "@font-face: no web fonts on this site")
+    loaded = set()
     for url in css_urls(css):
         if not is_local(url) and not url.startswith("data:"):
             report.fail(rel, f"loads a third-party resource: {url}")
+        elif is_local(url):
+            target = resolve(url, rel, "")
+            if not target or not (DIST / target).is_file():
+                report.fail(rel, f"points to a missing file: {url}")
+            else:
+                loaded.add(target)
+    # Web fonts: WOFF2 files of this site only, within the budget, each with its licence beside it.
+    # A face with only local() sources (a metric-matched fallback) downloads nothing and does not count.
+    families, files = set(), set()
+    for face in re.findall(r"@font-face\s*{([^}]*)}", css):
+        urls = css_urls(face)
+        if not urls:
+            continue
+        family = re.search(r"font-family:\s*['\"]?([^'\";]+)", face)
+        families.add(family.group(1).strip() if family else "?")
+        for url in urls:
+            target = resolve(url, rel, "") if is_local(url) else None
+            if not target or not target.endswith(".woff2"):
+                report.fail(rel, f"@font-face must use a WOFF2 file of this site: {url}")
+                continue
+            files.add(target)
+            folder = posixpath.dirname(target)
+            licences = [posixpath.join(folder, name) for name in FONT_LICENCES]
+            if not any((DIST / lic).is_file() for lic in licences):
+                report.fail(rel, f"font {target} has no licence ({' or '.join(FONT_LICENCES)}) beside it")
+            loaded.update(lic for lic in licences if (DIST / lic).is_file())
+    if len(families) > FONT_FAMILIES:
+        report.fail(rel, f"{len(families)} font families > budget {FONT_FAMILIES}: {', '.join(sorted(families))}")
+    if len(files) > FONT_FILES:
+        report.fail(rel, f"{len(files)} WOFF2 files > budget {FONT_FILES}")
+    return loaded
 
 
 def check_page(path, html, report, base_path, is_404=False, base_url=""):
@@ -158,7 +193,7 @@ def check_page(path, html, report, base_path, is_404=False, base_url=""):
             if not is_local(url):
                 report.fail(page, f"<style> loads a third-party resource: {url}")
         if "@font-face" in check_inline:
-            report.fail(page, "@font-face: no web fonts on this site")
+            report.fail(page, "@font-face belongs in css/site.css, where its budget is checked")
 
     for link in soup.find_all("link"):
         href = link.get("href", "")
@@ -313,13 +348,14 @@ def main():
         img = check_page(html_path, html_path.read_text(encoding="utf-8"), report, base_path if is_404 else "", is_404,
                          base_url)
         weights.append((img, html_path.relative_to(DIST).as_posix()))
+    loaded_by_css = set()
     for css in sorted(DIST.rglob("*.css")):
-        check_css_file(css, report)
+        loaded_by_css |= check_css_file(css, report)
 
     for pdf in sorted(DIST.rglob("*.pdf")):
         if OLD_DOMAIN.encode() in pdf.read_bytes():
             report.note(f"{pdf.relative_to(DIST)} mentions {OLD_DOMAIN} inside the PDF (cannot be fixed here)")
-    used = set()
+    used = set(loaded_by_css)
     for html_path in DIST.rglob("*.html"):
         soup = BeautifulSoup(html_path.read_text(encoding="utf-8"), "html.parser")
         for el in soup.find_all(["a", "img", "link"]):

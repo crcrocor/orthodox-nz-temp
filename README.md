@@ -3,7 +3,7 @@
 Temporary website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458).
 
 - Now: https://crcrocor.github.io/orthodox-nz-temp/ — later at https://orthodox.nz/ (planned, after Fr Vladimir's blessing).
-- What it is: a deanery home page, a copy of the old Auckland parish site orthodox.net.nz on one neutral template, and the About, Contact and Privacy pages, in English (default) and Russian (under `ru/`). The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).
+- What it is: a deanery home page, a copy of the old Auckland parish site orthodox.net.nz on one template, and the About, Contact and Privacy pages, in English (default) and Russian (under `ru/`). The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).
 - Rules for people and agents: [AGENTS.md](AGENTS.md).
 
 ## How it is built
@@ -22,7 +22,7 @@ orthodox.net.nz ──scripts/mirror.py──▶ content/pages/ + static/ ──
 - `old_paths.txt` lists every path the site has ever had. The mirror only adds to it, and the check fails if one of them is missing, so old links keep working.
 - Every push to `main` runs `.github/workflows/pages.yml`: it builds the site, runs all checks and deploys only if they pass.
 
-You need [uv](https://docs.astral.sh/uv/); it installs Python 3.14 and the three dependencies (`jinja2`, `beautifulsoup4`, `html5lib`) by itself.
+You need [uv](https://docs.astral.sh/uv/); it installs Python 3.14 and the three dependencies (`jinja2`, `beautifulsoup4`, `html5lib`) by itself. `scripts/fonts.py`, which makes the web fonts, brings its own (`fonttools`) and is needed only when the fonts change.
 
 ## Rebuild and check
 
@@ -30,7 +30,7 @@ You need [uv](https://docs.astral.sh/uv/); it installs Python 3.14 and the three
 uv run scripts/check.py
 ```
 
-This builds `dist/` and checks it: every path in `old_paths.txt` exists, nothing points at orthodox.net.nz, no third-party resources, scripts (so the JS budget is 0) or forms, every internal link is relative and works, the CSS budget, headings, `lang` on Russian text, the footer, and the corrected facts. At the end it lists every open `TODO(content)` and `needs blessing:` item. The site is done only when it prints `check: OK`.
+This builds `dist/` and checks it: every path in `old_paths.txt` exists, nothing points at orthodox.net.nz, no third-party resources, scripts (so the JS budget is 0) or forms, every internal link is relative and works, the CSS and font budgets (at most two families and four WOFF2 files of this site, each with its licence), headings, `lang` on Russian text, the footer, and the corrected facts. At the end it lists every open `TODO(content)` and `needs blessing:` item. The site is done only when it prints `check: OK`.
 
 To look at the result:
 
@@ -57,7 +57,7 @@ Read the diff, then commit and push. The mirror fetches one page or file at a ti
 
 - **Local and frozen pages** (deanery home, About, Privacy; the parish page, schedule, news, donations and the rest): edit `content/pages/<page>.html` (English) and `content/pages/ru/<page>.html` (Russian) and keep them in step. Write links in the Russian file as seen from the English page (`files/x.pdf`, `contact.html`); the build adjusts them. Keep the first line of a frozen page: it records which version of the old page it was copied from.
 - **Other pages** (`mirror`): change the text on the old site and refresh, or add a fix to `scripts/corrections.py` (the exact text to find, the replacement, how many times it occurs and why).
-- **Menu, footer, interface texts in both languages and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
+- **Menu, footer, interface texts in both languages and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`. **Fonts**: PT Serif, subset to Latin and Cyrillic and renamed "Deanery Serif" (its licence reserves the original name) by `uv run scripts/fonts.py` into `static/fonts/`; the characters it keeps are listed in the script.
 - Facts about the trust come only from the Charities Register; anything unknown is written as a hidden `<!-- TODO(content): … -->`, anything that needs a decision as `<!-- needs blessing: … -->`. The list printed by the check goes to Fr Pavel first; what he cannot answer goes to Fr Vladimir. A grouped snapshot of it, in Russian, is in [docs/todo-and-blessings.md](docs/todo-and-blessings.md).
 
 Then run `uv run scripts/check.py`, commit and push. Until the custom domain is connected we work directly in `main`; after that, only through pull requests.

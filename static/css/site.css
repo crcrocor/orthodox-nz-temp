@@ -1,22 +1,80 @@
-/* Neutral temporary styles for the stage 0 site. Token names follow orthodox-nz docs/design/DESIGN.md;
-   the values are placeholders until a design direction is blessed (orthodox-nz task 004). */
+/* Book page — the design of the stage 0 site (approved by Fr Alexander 2026-10-19; not the portal's brand,
+   orthodox-nz task 004 decides that). One serif for everything, set like a well-made book: black ink on
+   white paper, hierarchy by size and space, no boxes. Cinnabar, the second ink of a two-colour service book,
+   marks only "this page": its title and its line in the menu. Token names follow orthodox-nz docs/design/DESIGN.md.
+
+   Type: PT Serif (ParaType, 2010; Alexandra Korolkova and Olga Umpeleva, supervised by Vladimir Yefimov),
+   SIL Open Font License 1.1 (fonts/OFL.txt). scripts/fonts.py subsets it to Latin and Cyrillic and renames it
+   "Deanery Serif", because the licence reserves the name "PT Serif" for unmodified fonts. Regular and Bold
+   load on every page; Italic only where the text has <em>. */
+
+@font-face {
+  font-family: "Deanery Serif";
+  src: url("../fonts/deanery-serif-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Deanery Serif";
+  src: url("../fonts/deanery-serif-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Deanery Serif";
+  src: url("../fonts/deanery-serif-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* System serifs sized to PT Serif's metrics (scale from the average width of the site's letters, vertical
+   metrics from PT Serif's hhea), so the text hardly moves when the font arrives: Georgia (Windows, macOS,
+   iOS) and Noto Serif (Android). They download nothing. Safari before 17 ignores the overrides. */
+@font-face {
+  font-family: "Deanery Serif Fallback";
+  src: local("Georgia");
+  size-adjust: 100.74%;
+  ascent-override: 103.13%;
+  descent-override: 28.39%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Deanery Serif Fallback Noto";
+  src: local("Noto Serif Regular"), local("NotoSerif-Regular"), local("Noto Serif");
+  size-adjust: 93.14%;
+  ascent-override: 111.55%;
+  descent-override: 30.71%;
+  line-gap-override: 0%;
+}
+
 :root {
-  --color-bg: #ffffff;
-  --color-surface: #f3f4f3;
-  --color-ink: #1c1d1f;
-  --color-ink-muted: #4f5357;
-  --color-accent: #1d5a63;
-  --color-accent-ink: #ffffff;
-  --color-line: #d5d8d8;
-  --color-focus: #b4570b;
+  --color-bg: #ffffff;          /* paper */
+  --color-surface: #f3f2ef;     /* wash: only under the skip link */
+  --color-ink: #1d1b19;         /* printing ink: text, headings, links, the focus ring */
+  --color-ink-muted: #5c5853;   /* pencil: secondary text, link underlines, the language knob */
+  --color-accent: #9f1c20;      /* cinnabar: the page title and the current line of the menu only */
+  --color-accent-ink: #ffffff;  /* text on the knob */
+  --color-line: #cfcac4;        /* hairlines that separate, never frame */
+  --color-line-strong: #8c857d; /* borders of controls and the closing rule (3:1 on paper) */
+  --color-focus: #1d1b19;
 
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --step--1: 1rem;
-  --step-0: clamp(1.125rem, 1.08rem + 0.2vw, 1.1875rem);
-  --step-1: clamp(1.25rem, 1.18rem + 0.35vw, 1.4rem);
-  --step-2: clamp(1.4rem, 1.27rem + 0.6vw, 1.7rem);
-  --step-3: clamp(1.65rem, 1.45rem + 1vw, 2.15rem);
+  --font-body: "Deanery Serif", "Deanery Serif Fallback", "Deanery Serif Fallback Noto", Georgia, "Times New Roman", serif;
 
+  /* Fluid scale from 360 px to 1280 px wide; rem, so the reader's text size scales everything. */
+  --step--1: clamp(1.0625rem, 1.038rem + 0.1087vw, 1.125rem); /* 17 → 18, secondary text */
+  --step-0: clamp(1.125rem, 1.0761rem + 0.2174vw, 1.25rem);   /* 18 → 20, body text */
+  --step-1: clamp(1.25rem, 1.1766rem + 0.3261vw, 1.4375rem);  /* 20 → 23 */
+  --step-2: clamp(1.4375rem, 1.3152rem + 0.5435vw, 1.75rem);  /* 23 → 28 */
+  --step-3: clamp(1.6875rem, 1.4918rem + 0.8696vw, 2.1875rem); /* 27 → 35, the page title on the smallest phones */
+  --step-4: clamp(2rem, 1.6087rem + 1.7391vw, 3rem);          /* 32 → 48, the page title */
+
+  --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-s: 0.75rem;
@@ -25,11 +83,18 @@
   --space-xl: 2.5rem;
   --space-2xl: 4rem;
 
-  --measure: 34em;
-  --wrap: 76rem;
-  --radius: 3px;
+  /* The type area: the text is one measure wide (about 66 Latin or 59 Cyrillic characters a line);
+     on wide screens the menu stands in its left margin. */
+  --measure: 31.5em;
+  --contents: 15.5rem; /* no Russian item takes another line when it turns bold */
+  --col-gap: 4rem;
+  --gutter: clamp(1rem, 0.4rem + 2.6vw, 2rem);
+  --wrap: calc(var(--contents) + var(--col-gap) + var(--measure));
+
+  --radius: 2px;
   --radius-pill: 999px;
 
+  /* Motion: only the answer to the reader's own action (the language knob, the menu chevron). */
   --dur-fast: 150ms;
   --dur-base: 220ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -53,66 +118,97 @@ body {
   font-family: var(--font-body);
   font-size: var(--step-0);
   line-height: 1.6;
+  font-kerning: normal;
   overflow-wrap: break-word;
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-ink-muted);
   text-decoration-thickness: 1px;
-  text-underline-offset: 0.15em;
+  text-underline-offset: 0.2em;
 }
 
 a:hover {
+  text-decoration-color: var(--color-ink);
   text-decoration-thickness: 2px;
 }
 
+/* The tap flash on phones in ink (instead of the browser's cyan); it is the only feedback on a tap. */
+a,
+summary {
+  -webkit-tap-highlight-color: rgba(29, 27, 25, 0.12);
+}
+
 a:focus-visible,
-summary:focus-visible,
-.lang-switch:focus-visible {
+summary:focus-visible {
   outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .skip {
   position: absolute;
-  left: var(--space-s);
+  z-index: 1;
+  left: var(--gutter);
   top: -10rem;
   padding: var(--space-xs) var(--space-s);
-  background: var(--color-bg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
 }
 
 .skip:focus {
-  top: var(--space-s);
+  top: var(--space-xs);
 }
 
-/* Header */
+/* The type area, centred like a page on a desk */
 .wrap {
-  max-width: var(--wrap);
+  max-width: calc(var(--measure) + 2 * var(--gutter));
   margin: 0 auto;
-  padding: 0 var(--space-m);
+  padding: 0 var(--gutter);
 }
 
+@media (min-width: 60em) {
+  .wrap {
+    max-width: calc(var(--wrap) + 2 * var(--gutter));
+  }
+}
+
+/* Running head: the name, the language switch and one rule as wide as the type area */
 .masthead {
-  border-bottom: 1px solid var(--color-line);
-  padding: var(--space-m) 0;
+  padding-top: var(--space-m);
 }
 
 .masthead-inner {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-xs) var(--space-m);
+  gap: var(--space-s) var(--space-m);
+  padding-bottom: var(--space-s);
 }
 
-/* The switch drops below the name before the name gets narrower than its longest word. */
+.masthead-inner::after {
+  content: "";
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+/* The name shares the line with the switch until enlarged text leaves it less than 9em; then the switch
+   moves under it. It never grows wider than its text, so the blank space beside it is not a link. */
 .masthead-inner .brand {
-  flex: 1 1 14rem;
+  flex: 1 1 9em;
   min-width: 0;
+  max-width: max-content;
 }
 
 .brand {
-  display: inline-block;
+  display: block;
   color: var(--color-ink);
   text-decoration: none;
 }
@@ -120,29 +216,37 @@ summary:focus-visible,
 .brand-name {
   display: block;
   font-size: var(--step-1);
-  font-weight: 700;
   line-height: 1.25;
 }
 
 .brand-line2 {
   display: block;
+  margin-top: var(--space-3xs);
   color: var(--color-ink-muted);
   font-size: var(--step--1);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-/* Language switch: a pill with a knob on the current language. The whole pill links to the other
-   language; the knob leans that way on hover and slides on press (and between pages, where the browser
-   supports view transitions). */
+.brand:hover .brand-name {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+/* Language switch: the one pill. The knob sits on the current language; the whole pill links to the other
+   language. The knob leans that way on hover and slides across from page to page, where the browser
+   supports cross-document view transitions. */
 .lang-switch {
   position: relative;
   display: inline-flex;
   flex: none;
+  margin-left: auto;
   min-height: 44px;
   padding: 3px;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-bg);
+  color: var(--color-ink);
   text-decoration: none;
 }
 
@@ -153,7 +257,7 @@ summary:focus-visible,
   left: 3px;
   width: calc(50% - 3px);
   border-radius: var(--radius-pill);
-  background: var(--color-accent);
+  background: var(--color-ink-muted);
 }
 
 .lang-switch[data-lang="ru"] .lang-switch-knob {
@@ -165,27 +269,170 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 3.25rem;
-  padding: 0 var(--space-s);
+  min-width: 2.75rem;
+  padding: 0 var(--space-xs);
   color: var(--color-ink-muted);
-  font-size: var(--step--1);
-  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1;
   letter-spacing: 0.04em;
 }
 
 .lang-switch[data-lang="en"] .lang-switch-option:nth-child(2),
 .lang-switch[data-lang="ru"] .lang-switch-option:nth-child(3) {
   color: var(--color-accent-ink);
+  font-weight: 700;
 }
 
 .lang-switch:hover,
 .lang-switch:focus-visible {
-  border-color: var(--color-accent);
+  border-color: var(--color-ink);
+}
+
+.lang-switch[data-lang="en"]:hover .lang-switch-option:nth-child(3),
+.lang-switch[data-lang="ru"]:hover .lang-switch-option:nth-child(2) {
+  color: var(--color-ink);
+}
+
+.lang-switch:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* The menu: a column in the margin on wide screens, a disclosure on phones */
+.menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu li {
+  margin: 0;
+}
+
+.menu-group {
+  margin: var(--space-l) 0 var(--space-3xs);
+  color: var(--color-ink-muted);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+
+.menu a {
+  display: block;
+  min-height: 44px;
+  padding: 0.6rem 0;
+  color: var(--color-ink);
+  font-size: 1.125rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.menu a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-ink-muted);
+}
+
+.menu a[aria-current="page"] {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.menu-wide {
+  display: none;
+}
+
+.menu-narrow {
+  margin-top: var(--space-m);
+}
+
+/* A visible button: framed, with a chevron that turns when the menu opens. No flex on <summary>:
+   Safari 15 cannot make it a flex container. */
+.menu-narrow summary {
+  position: relative;
+  display: block;
+  min-height: 48px;
+  padding: var(--space-xs) 3rem var(--space-xs) var(--space-s);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  line-height: 1.6;
+  list-style: none;
+}
+
+.menu-narrow summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-narrow summary::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: -0.275rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-25%) rotate(45deg);
+}
+
+.menu-narrow[open] summary::after {
+  transform: translateY(25%) rotate(-135deg);
+}
+
+.menu-narrow summary:hover {
+  border-color: var(--color-ink);
+}
+
+.menu-narrow nav {
+  padding: var(--space-xs) 0 var(--space-s);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.content {
+  min-width: 0;
+  padding: var(--space-l) 0 var(--space-2xl);
+}
+
+@media (min-width: 30em) {
+  .content {
+    padding-top: var(--space-xl);
+  }
+}
+
+@media (min-width: 60em) {
+  .layout {
+    display: grid;
+    grid-template-columns: var(--contents) minmax(0, var(--measure));
+    column-gap: var(--col-gap);
+  }
+
+  .menu-wide {
+    display: block;
+    padding: var(--space-2xl) 0 var(--space-xl);
+  }
+
+  .menu-wide > ul:first-child {
+    margin-top: calc(-1 * var(--space-2xs));
+  }
+
+  .menu-narrow {
+    display: none;
+  }
+
+  /* The sink: a page opens lower, like a chapter. */
+  .content {
+    padding-top: var(--space-2xl);
+  }
+
+  /* List dashes hang in the margin, so lists and paragraphs share one left edge. */
+  .content > ul {
+    padding-left: 0;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .lang-switch-knob,
-  .lang-switch-option {
+  .menu-narrow summary::after {
     transition: transform var(--dur-base) var(--ease-out);
   }
 
@@ -199,7 +446,8 @@ summary:focus-visible,
     transform: translateX(88%);
   }
 
-  /* Browsers with cross-document view transitions cross-fade from page to page (the knob too). */
+  /* Browsers with cross-document view transitions cross-fade from page to page, and the knob slides
+     under its labels to the new language. There is one switch per page, so the names are unique. */
   @view-transition {
     navigation: auto;
   }
@@ -208,168 +456,152 @@ summary:focus-visible,
   ::view-transition-new(root) {
     animation-duration: var(--dur-fast);
   }
-}
 
-/* Layout: menu column beside the text on wide screens, a disclosure on phones */
-.menu ul {
-  list-style: none;
-  margin: 0 0 var(--space-m);
-  padding: 0;
-}
-
-.menu-group {
-  margin: var(--space-s) 0 var(--space-2xs);
-  padding: 0 var(--space-s);
-  color: var(--color-ink-muted);
-  font-size: var(--step--1);
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.menu a {
-  display: block;
-  min-height: 44px;
-  padding: var(--space-xs) var(--space-s);
-  color: var(--color-ink);
-  text-decoration: none;
-  line-height: 1.4;
-}
-
-.menu a:hover {
-  text-decoration: underline;
-}
-
-.menu a[aria-current="page"] {
-  background: var(--color-surface);
-  font-weight: 700;
-}
-
-.menu-wide {
-  display: none;
-}
-
-.menu-narrow {
-  margin: var(--space-s) 0 0;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius);
-}
-
-.menu-narrow summary {
-  min-height: 44px;
-  padding: var(--space-xs) var(--space-s);
-  cursor: pointer;
-  font-weight: 700;
-  line-height: 1.6;
-}
-
-.menu-narrow[open] summary {
-  border-bottom: 1px solid var(--color-line);
-}
-
-.content {
-  min-width: 0;
-  padding: var(--space-l) 0 var(--space-2xl);
-}
-
-@media (min-width: 60em) {
-  .layout {
-    display: grid;
-    grid-template-columns: 15rem minmax(0, 1fr);
-    gap: var(--space-xl);
+  .lang-switch-knob {
+    view-transition-name: lang-knob;
   }
 
-  .menu-wide {
-    display: block;
-    padding-top: var(--space-l);
+  .lang-switch-option:nth-child(2) {
+    view-transition-name: lang-en;
   }
 
-  .menu-narrow {
-    display: none;
+  .lang-switch-option:nth-child(3) {
+    view-transition-name: lang-ru;
   }
-}
 
-.note {
-  padding: var(--space-xs) var(--space-s);
-  background: var(--color-surface);
-  border-radius: var(--radius);
+  ::view-transition-group(lang-knob) {
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
 }
 
 /* Text */
-.content > * {
-  max-width: var(--measure);
+.content > :first-child {
+  margin-top: 0;
 }
 
 h1,
 h2,
 h3,
 h4 {
-  line-height: 1.25;
-  margin: var(--space-xl) 0 var(--space-s);
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: var(--step-3);
-  margin-top: 0;
+  margin-bottom: var(--space-l);
+  color: var(--color-accent);
+  font-size: var(--step-4);
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+}
+
+/* Below 360 px the longest Russian title words («конфиденциальности», «Благотворительный») need a smaller size. */
+@media (max-width: 22.4375em) {
+  h1 {
+    font-size: var(--step-3);
+  }
 }
 
 h2 {
+  margin: var(--space-xl) 0 var(--space-xs);
   font-size: var(--step-2);
 }
 
-h3 {
-  font-size: var(--step-1);
-}
-
+h3,
 h4 {
+  margin: var(--space-l) 0 var(--space-2xs);
   font-size: var(--step-0);
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 p,
 ul,
 ol,
+dl,
 blockquote,
 figure,
 table {
   margin: 0 0 var(--space-m);
 }
 
-ul,
+p {
+  hanging-punctuation: first;
+}
+
+/* A bold-only paragraph that heads the next one in the articles (scripts/build.py marks it) */
+.content p.run-in {
+  margin: var(--space-l) 0 var(--space-2xs);
+}
+
+/* Lists take the dash, as in Russian books. */
+ul {
+  padding-left: 1.4em;
+  list-style-type: "\2013\00a0\00a0";
+}
+
 ol {
-  padding-left: var(--space-l);
+  padding-left: 1.6em;
 }
 
 li {
   margin-bottom: var(--space-2xs);
 }
 
+li::marker {
+  color: var(--color-ink-muted);
+}
+
+/* The note under the title of a page that exists in one language only */
+.note {
+  color: var(--color-ink-muted);
+}
+
 dt {
-  font-weight: 700;
+  color: var(--color-ink-muted);
 }
 
 dd {
-  margin: 0 0 var(--space-s);
+  margin: 0 0 var(--space-xs);
 }
 
-section {
-  margin-top: var(--space-2xl);
-  border-top: 1px solid var(--color-line);
+@media (min-width: 30em) {
+  dl {
+    display: grid;
+    /* Labels take at least 9em, so the lists of a page share one label column (donations.html has two),
+       and at most 40%, so a long label (ru/about.html) wraps instead of crushing the values. */
+    grid-template-columns: fit-content(40%) minmax(0, 1fr);
+    gap: var(--space-2xs) var(--space-l);
+  }
+
+  dt {
+    min-width: 9em;
+  }
+
+  dd {
+    margin: 0;
+  }
 }
 
 blockquote {
-  margin-left: 0;
-  padding-left: var(--space-m);
-  border-left: 3px solid var(--color-line);
+  margin-left: var(--space-l);
+  padding: 0;
 }
 
 hr {
-  border: 0;
-  border-top: 1px solid var(--color-line);
+  width: 4rem;
   margin: var(--space-xl) 0;
+  border: 0;
+  border-top: 1px solid var(--color-line-strong);
 }
 
 img {
   max-width: 100%;
   height: auto;
+  vertical-align: bottom;
 }
 
 figure {
@@ -389,22 +621,24 @@ table {
   table-layout: fixed;
 }
 
-.content > table {
-  max-width: none;
-}
-
 td:first-child:not([colspan]) {
-  width: 45%;
+  width: 40%;
 }
 
 td,
 th {
   border-top: 1px solid var(--color-line);
-  padding: var(--space-xs) var(--space-s) var(--space-xs) 0;
+  padding: var(--space-xs) var(--space-m) var(--space-xs) 0;
   text-align: left;
   vertical-align: top;
+  font-weight: 400;
+  line-height: 1.45;
   /* Long URLs in the links table must wrap instead of widening the page. */
   overflow-wrap: anywhere;
+}
+
+tr:last-child td {
+  border-bottom: 1px solid var(--color-line);
 }
 
 @media (max-width: 40em) {
@@ -418,9 +652,14 @@ th {
   }
 
   td,
-  th {
-    border-top: 0;
+  th,
+  tr:last-child td {
+    border: 0;
     padding: 0;
+  }
+
+  td:first-child:not([colspan]) {
+    width: auto;
   }
 
   tr {
@@ -429,41 +668,116 @@ th {
   }
 }
 
-/* Footer */
+/* Phones: hyphenate running text so a narrow column keeps an even edge; never inside links. */
+@media (max-width: 30em) {
+  .content p,
+  .content li,
+  .content dd {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+  }
+
+  .content a {
+    -webkit-hyphens: manual;
+    hyphens: manual;
+  }
+}
+
+/* Colophon: who publishes the site, under the text column after a short closing rule */
 .site-footer {
-  border-top: 1px solid var(--color-line);
-  background: var(--color-surface);
-  padding: var(--space-l) 0 var(--space-xl);
-  font-size: var(--step--1);
+  padding: 0 0 var(--space-2xl);
+  color: var(--color-ink-muted);
+}
+
+.site-footer .wrap::before {
+  content: "";
+  display: block;
+  width: 4rem;
+  margin-bottom: var(--space-l);
+  border-top: 1px solid var(--color-line-strong);
+}
+
+@media (min-width: 60em) {
+  .site-footer .wrap {
+    padding-left: calc(var(--gutter) + var(--contents) + var(--col-gap));
+  }
 }
 
 .site-footer p {
-  margin-top: 0;
+  margin: 0 0 var(--space-xs);
+  max-width: var(--measure);
+  font-size: var(--step--1);
+  line-height: 1.5;
 }
 
 .footer-links {
-  list-style: none;
-  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--space-l);
+  gap: 0 var(--space-m);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+}
+
+.footer-links li {
+  min-width: 0;
+  margin: 0;
 }
 
 .footer-links a {
   display: inline-block;
+  max-width: 100%; /* a long word («Конфиденциальность») wraps in enlarged text instead of widening the page */
+  min-width: 44px;
   min-height: 44px;
-  padding: var(--space-xs) 0;
+  padding: var(--space-s) 0 var(--space-xs);
 }
 
 @media (forced-colors: active) {
   .lang-switch-knob {
     border: 2px solid CanvasText;
   }
+
+  .menu a[aria-current="page"] {
+    text-decoration: underline;
+  }
 }
 
 @media print {
+  body {
+    font-size: 12pt;
+  }
+
   .menu,
-  .skip {
+  .skip,
+  .lang-switch {
     display: none;
+  }
+
+  .wrap {
+    max-width: none;
+    padding: 0;
+  }
+
+  .masthead-inner::after {
+    left: 0;
+    right: 0;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .content {
+    padding: var(--space-l) 0;
+  }
+
+  .site-footer .wrap {
+    padding-left: 0;
+  }
+
+  .site-footer p,
+  .footer-links {
+    font-size: 10pt;
   }
 }

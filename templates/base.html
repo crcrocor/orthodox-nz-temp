@@ -6,6 +6,7 @@
 <title>{{ title }}{% if not is_home %} | {{ ui.title_suffix }}{% endif %}</title>
 <meta name="description" content="{{ description }}">
 <meta name="color-scheme" content="light">
+<link rel="preload" href="{{ asset_root }}fonts/deanery-serif-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{ asset_root }}css/site.css">
 {%- if alternates %}
 <link rel="alternate" hreflang="en" href="{{ alternates.en }}">
