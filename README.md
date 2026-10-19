@@ -2,7 +2,7 @@
 
 Temporary website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458).
 
-- Now: https://crcrocor.github.io/orthodox-nz-temp/ — later at https://orthodox.nz/ (planned, after Fr Vladimir's blessing).
+- Address: https://orthodox.nz/ (connected 2026-10-19 by Fr Alexander's decision; https://crcrocor.github.io/orthodox-nz-temp/ redirects there).
 - What it is: a deanery home page, a copy of the old Auckland parish site orthodox.net.nz on one template, and the About, Contact and Privacy pages, in English (default) and Russian (under `ru/`). The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).
 - Rules for people and agents: [AGENTS.md](AGENTS.md).
 
@@ -60,4 +60,4 @@ Read the diff, then commit and push. The mirror fetches one page or file at a ti
 - **Menu, footer, interface texts in both languages and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`. **Fonts**: PT Serif, subset to Latin and Cyrillic and renamed "Deanery Serif" (its licence reserves the original name) by `uv run scripts/fonts.py` into `static/fonts/`; the characters it keeps are listed in the script.
 - Facts about the trust come only from the Charities Register; anything unknown is written as a hidden `<!-- TODO(content): … -->`, anything that needs a decision as `<!-- needs blessing: … -->`. The list printed by the check goes to Fr Pavel first; what he cannot answer goes to Fr Vladimir. A grouped snapshot of it, in Russian, is in [docs/todo-and-blessings.md](docs/todo-and-blessings.md).
 
-Then run `uv run scripts/check.py`, commit and push. Until the custom domain is connected we work directly in `main`; after that, only through pull requests.
+Then run `uv run scripts/check.py`, commit on a branch and open a pull request. Since the custom domain was connected (2026-10-19), changes reach `main` only through pull requests: the check runs on every pull request, and every push to `main` deploys.
