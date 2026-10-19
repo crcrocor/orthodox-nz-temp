@@ -1,6 +1,6 @@
 # orthodox-nz-temp
 
-Temporary website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458), the trust of the deanery's parish in Auckland.
+Temporary website of the New Zealand Deanery of the Russian Orthodox Church Outside of Russia, published by the Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust (registered charity CC42458).
 
 - Now: https://crcrocor.github.io/orthodox-nz-temp/ — later at https://orthodox.nz/ (planned, after Fr Vladimir's blessing).
 - What it is: a deanery home page, a copy of the old Auckland parish site orthodox.net.nz on one neutral template, and the About, Contact and Privacy pages, in English (default) and Russian (under `ru/`). The Wagtail portal in [crcrocor/orthodox-nz](https://github.com/crcrocor/orthodox-nz) replaces it later (task 008, decision 0004 there).

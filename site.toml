@@ -51,32 +51,34 @@ not_found_title = "Страница не найдена"
 not_found_text = "Такой страницы нет. Начните, пожалуйста, с"
 not_found_link = "главной страницы"
 
-# The menu, in groups. Labels are the old site's where it had them.
+# The menu, in groups: the deanery (untitled, first), the Auckland parish, the Orthodox faith.
+# Labels are the old site's where it had them.
 [[menu]]
 items = [
     { path = "index.html", en = "Home", ru = "Главная" },
+    { path = "news.html", en = "News and Photos", ru = "Новости и фотографии" },
+    { path = "pravmir.html", en = "Russian Newsletter", ru = "Стенгазета «Православие и мир»" },
+    { path = "newsletter.html", en = "English Bulletin", ru = "Бюллетень на английском" },
+    { path = "clergy.html", en = "Clergy", ru = "Духовенство" },
+    { url = "http://roei.org.nz/", en = "Russian Orthodox Educational Institute", ru = "Русский православный образовательный институт" },
+    { path = "donations.html", en = "Donations", ru = "Пожертвования" },
+    { path = "benevolent_fund.html", en = "Benevolent Fund", ru = "Благотворительный фонд" },
+    { path = "about.html", en = "About Us", ru = "О нас" },
+    { path = "contact.html", en = "Contact Information", ru = "Контакты" },
 ]
 
 [[menu]]
 title = { en = "Church of the Resurrection of Christ, Auckland", ru = "Храм Воскресения Христова, Окланд" }
 items = [
-    { path = "home.html", en = "The parish", ru = "О приходе" },
+    { path = "home.html", en = "The Parish", ru = "О приходе" },
     { path = "schedule.html", en = "Service Schedule", ru = "Расписание богослужений" },
-    { path = "news.html", en = "News and Photos", ru = "Новости и фотографии" },
-    { path = "pravmir.html", en = "Russian Newsletter", ru = "Стенгазета «Православие и мир»" },
-    { path = "newsletter.html", en = "English Bulletin", ru = "Бюллетень на английском" },
-    { path = "donations.html", en = "Donations", ru = "Пожертвования" },
-    { path = "benevolent_fund.html", en = "Benevolent Fund", ru = "Благотворительный фонд" },
-    { url = "http://roei.org.nz/", en = "Russian Orthodox Educational Institute", ru = "Русский православный образовательный институт" },
-    { path = "clergy.html", en = "Clergy", ru = "Духовенство" },
-    { path = "contact.html", en = "Contact Information", ru = "Контакты" },
 ]
 
 [[menu]]
-title = { en = "The Orthodox faith", ru = "Православная вера" }
+title = { en = "The Orthodox Faith", ru = "Православная вера" }
 items = [
     { path = "about_orthodoxy.html", en = "About Orthodoxy", ru = "О Православии" },
-    { path = "creed.html", en = "Символ Веры", ru = "Символ веры" },
+    { path = "creed.html", en = "Символ веры", ru = "Символ веры" },
     { path = "onlinecatechism.html", en = "Online Catechism", ru = "Катехизис онлайн" },
     { path = "links.html", en = "Links", ru = "Ссылки" },
 ]
@@ -148,6 +150,7 @@ source = "/creed"
 [pages."onlinecatechism.html"]
 kind = "mirror"
 source = "/onlinecatechism"
+h1_ru = "Катехизис онлайн"
 
 [pages."about_orthodoxy.html"]
 kind = "mirror"

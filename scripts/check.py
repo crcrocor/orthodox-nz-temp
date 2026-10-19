@@ -1,6 +1,6 @@
 """Build the site and check it; the one command that decides "done". Exit code 1 on any failure.
 
-Usage: uv run scripts/check.py [--base-path /orthodox-nz-temp]
+Usage: uv run scripts/check.py [--base-path /orthodox-nz-temp] [--base-url https://crcrocor.github.io/orthodox-nz-temp]
 
 Checks: every path in old_paths.txt exists; nothing points at orthodox.net.nz; no third-party resources,
 scripts or forms; every internal link is relative and resolves; the CSS budget; page structure, heading
@@ -21,7 +21,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup, Comment
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build import CONTENT, CYRILLIC, DIST, ROOT, STATIC, build  # noqa: E402
+from build import CONTENT, CYRILLIC, DIST, ROOT, STATIC, build, effective_lang  # noqa: E402
 
 # gzip bytes per page (orthodox-nz docs/design/compat.md). The JS budget (50 KB) needs no measuring:
 # any <script> fails the check.
@@ -112,7 +112,7 @@ def check_css_file(path, report):
             report.fail(rel, f"loads a third-party resource: {url}")
 
 
-def check_page(path, html, report, base_path, is_404=False):
+def check_page(path, html, report, base_path, is_404=False, base_url=""):
     """Check one built page; the 404 page alone uses links from the site root (GitHub serves it at any depth)."""
     page = path.relative_to(DIST).as_posix()
     soup = BeautifulSoup(html, "html.parser")
@@ -162,6 +162,13 @@ def check_page(path, html, report, base_path, is_404=False):
 
     for link in soup.find_all("link"):
         href = link.get("href", "")
+        if base_url and "alternate" in (link.get("rel") or []) and href.startswith(base_url.rstrip("/") + "/"):
+            target = href[len(base_url.rstrip("/")) + 1:] or "index.html"
+            if target.endswith("/"):
+                target += "index.html"
+            if not (DIST / target).is_file():
+                report.fail(page, f"hreflang alternate points to a missing page: {href}")
+            continue
         if not is_local(href):
             report.fail(page, f"<link rel={link.get('rel')}> points to another site: {href}")
             continue
@@ -194,6 +201,10 @@ def check_page(path, html, report, base_path, is_404=False):
         target = resolve(href, page, base_path)
         if target and not (DIST / target).is_file():
             report.fail(page, f"broken link: {href}")
+        # Inside a language version, links to pages stay in that version; only the switch crosses over.
+        if target and target.endswith(".html") and not is_404 and "lang-switch" not in (a.get("class") or []):
+            if page.startswith("ru/") != target.startswith("ru/"):
+                report.fail(page, f"link leaves the {'Russian' if page.startswith('ru/') else 'English'} version: {href}")
         if not a.get_text(strip=True) and not a.find("img"):
             report.fail(page, f"empty link: {href}")
 
@@ -213,6 +224,10 @@ def check_page(path, html, report, base_path, is_404=False):
         holder = text.find_parent(lambda t: t.has_attr("lang"))
         if (holder["lang"] if holder else "") != "ru" and CYRILLIC.search(text):
             report.fail(page, f"Russian text without lang=\"ru\": {text.strip()[:50]!r}")
+    if page.startswith("ru/") and soup.body:
+        for text in soup.body.find_all(string=re.compile(r"[A-Za-z]{3,}")):
+            if not isinstance(text, Comment) and effective_lang(text, "ru") != "en":
+                report.fail(page, f"English text without lang=\"en\" on a Russian page: {text.strip()[:50]!r}")
     for img in soup.find_all("img", alt=CYRILLIC):
         holder = img if img.has_attr("lang") else img.find_parent(lambda t: t.has_attr("lang"))
         if (holder["lang"] if holder else "") != "ru":
@@ -280,8 +295,10 @@ def markers():
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-path", default="", help="path of the site on its host, e.g. /orthodox-nz-temp")
-    base_path = parser.parse_args().base_path.rstrip("/")
-    build(base_path)
+    parser.add_argument("--base-url", default="", help="full address of the site, for the hreflang alternates")
+    args = parser.parse_args()
+    base_path, base_url = args.base_path.rstrip("/"), args.base_url
+    build(base_path, base_url)
     report = Report()
 
     # old_paths.txt only grows (scripts/mirror.py adds to it), so a page or file that once existed
@@ -293,7 +310,8 @@ def main():
     weights = []
     for html_path in sorted(DIST.rglob("*.html")):
         is_404 = html_path == DIST / "404.html"
-        img = check_page(html_path, html_path.read_text(encoding="utf-8"), report, base_path if is_404 else "", is_404)
+        img = check_page(html_path, html_path.read_text(encoding="utf-8"), report, base_path if is_404 else "", is_404,
+                         base_url)
         weights.append((img, html_path.relative_to(DIST).as_posix()))
     for css in sorted(DIST.rglob("*.css")):
         check_css_file(css, report)

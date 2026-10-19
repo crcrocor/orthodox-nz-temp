@@ -1,6 +1,6 @@
 """Render content/pages/ through templates/base.html into dist/ (offline), in English and Russian.
 
-Usage: uv run scripts/build.py [--base-path /orthodox-nz-temp]
+Usage: uv run scripts/build.py [--base-path /orthodox-nz-temp] [--base-url https://crcrocor.github.io/orthodox-nz-temp]
 
 Every page is written twice: in English at its own path (the default, as on the old site) and in Russian
 under ru/. A page with a hand-written Russian version takes it from content/pages/ru/<path>; the others
@@ -8,7 +8,9 @@ show the same body in both versions and only the header, menu and footer change.
 as seen from the English page; the Russian copy gets its links to files adjusted.
 
 --base-path is the site's path on its host (actions/configure-pages gives it). Only 404.html needs it:
-GitHub Pages serves that page at any depth, so its links cannot be relative.
+GitHub Pages serves that page at any depth, so its links cannot be relative. --base-url, the site's full
+address (also from configure-pages), turns on the hreflang alternates, which must be absolute; without it
+(a local build) they are left out, so the address never has to be written into the repository.
 """
 
 import argparse
@@ -134,6 +136,9 @@ def pages(site):
     missing = sorted(set(listed) - on_disk)
     unlisted = sorted(on_disk - set(listed))
     orphans = sorted(russian - set(listed))
+    untranslated = sorted(p for p, meta in listed.items() if meta["kind"] in ("local", "frozen") and p not in russian)
+    if untranslated:
+        sys.exit(f"build: hand-made pages need a Russian version in content/pages/ru/: {untranslated}")
     if missing or unlisted or orphans:
         sys.exit(
             f"build: content/pages and site.toml disagree. missing: {missing} unlisted: {unlisted} "
@@ -149,13 +154,14 @@ def localise_links(soup, path):
     ]:
         url = el[attr]
         parts = urllib.parse.urlsplit(url)
-        if parts.scheme or parts.netloc or url.startswith(("#", "/")):
+        if parts.scheme or parts.netloc or url.startswith(("#", "/", "?")):
+            continue
+        # Pages (and directories, whose index is a page) have a Russian twin at the same relative place.
+        if parts.path in ("", ".", "..") or parts.path.endswith(("/", ".html")):
             continue
         target = posixpath.normpath(posixpath.join(posixpath.dirname(path), parts.path))
-        if target.endswith(".html"):
-            continue
         new = posixpath.relpath(target, posixpath.dirname("ru/" + path))
-        el[attr] = new + (f"#{parts.fragment}" if parts.fragment else "")
+        el[attr] = urllib.parse.urlunsplit(("", "", new, parts.query, parts.fragment))
 
 
 def prepare_menu(site, lang, page_root, current):
@@ -178,7 +184,8 @@ def prepare_menu(site, lang, page_root, current):
     return groups, footer
 
 
-def render(env, site, lang, path, body, *, asset_root, page_root, title=None, description=None, note=None):
+def render(env, site, lang, path, body, *, asset_root, page_root, base_url="", title=None, description=None,
+           note=None):
     """asset_root leads to the site root (CSS, files), page_root to the root of this language's pages."""
     other = "ru" if lang == "en" else "en"
     menu, footer = prepare_menu(site, lang, page_root, path)
@@ -196,12 +203,14 @@ def render(env, site, lang, path, body, *, asset_root, page_root, title=None, de
         description=description or ui["description"],
         asset_root=asset_root,
         here={code: asset_root + PREFIX[code] + path for code in LANGS},
+        alternates={code: base_url.rstrip("/") + "/" + PREFIX[code] + ("" if path == "index.html" else path)
+                    for code in LANGS} if base_url and path else None,
         note=note,
         content=Markup(body),
     )
 
 
-def render_page(env, site, path, meta, lang):
+def render_page(env, site, path, meta, lang, base_url=""):
     own = CONTENT / "ru" / path
     shared = lang == "ru" and not own.exists()
     source = own if lang == "ru" and own.exists() else CONTENT / path
@@ -222,13 +231,14 @@ def render_page(env, site, path, meta, lang):
         env, site, lang, path, str(soup).strip(),
         asset_root="../" * (path.count("/") + (lang == "ru")),
         page_root="../" * path.count("/"),
+        base_url=base_url,
         title=" ".join(h1s[0].get_text(" ").split()),
         description=meta.get("description_ru" if lang == "ru" else "description"),
         note=note,
     )
 
 
-def build(base_path=""):
+def build(base_path="", base_url=""):
     site = load_site()
     env = Environment(loader=FileSystemLoader(ROOT / "templates"), undefined=StrictUndefined, autoescape=True)
     if DIST.exists():
@@ -238,7 +248,7 @@ def build(base_path=""):
         for lang in LANGS:
             target = DIST / PREFIX[lang] / path
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(render_page(env, site, path, meta, lang), encoding="utf-8")
+            target.write_text(render_page(env, site, path, meta, lang, base_url), encoding="utf-8")
     base = base_path.rstrip("/") + "/"
     en, ru = site["ui"]["en"], site["ui"]["ru"]
     not_found = (
@@ -256,6 +266,7 @@ def build(base_path=""):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-path", default="", help="path of the site on its host, e.g. /orthodox-nz-temp")
+    parser.add_argument("--base-url", default="", help="full address of the site, for the hreflang alternates")
     args = parser.parse_args()
-    build(args.base_path)
+    build(args.base_path, args.base_url)
     print(f"build: wrote {sum(1 for p in DIST.rglob('*.html'))} pages to {DIST.relative_to(ROOT)}/")
