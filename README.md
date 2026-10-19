@@ -12,12 +12,13 @@ Temporary website of the Church of the Resurrection of Christ, Auckland (Russian
 orthodox.net.nz ──scripts/mirror.py──▶ content/pages/ + static/ ──scripts/build.py──▶ dist/ ──GitHub Actions──▶ Pages
 ```
 
-- `site.toml` lists every page with its kind:
+- `site.toml` lists the menu, the footer and every page with its kind:
   - `mirror` — regenerated from the old site on every mirror run;
   - `frozen` — copied from the old site once, then edited by hand (home, contact, clergy);
   - `local` — written by hand (about, privacy).
 - `content/pages/` holds the page bodies (HTML without header, menu or footer); `templates/base.html` adds those; `static/` holds the CSS and the files and images from the old site, under their old paths.
 - `scripts/corrections.py` holds the fixes for mirrored pages, so they survive every new mirror run.
+- `old_paths.txt` lists every path the site has ever had. The mirror only adds to it, and the check fails if one of them is missing, so old links keep working.
 - Every push to `main` runs `.github/workflows/pages.yml`: it builds the site, runs all checks and deploys only if they pass.
 
 You need [uv](https://docs.astral.sh/uv/); it installs Python 3.14 and the three dependencies (`jinja2`, `beautifulsoup4`, `html5lib`) by itself.
@@ -28,7 +29,7 @@ You need [uv](https://docs.astral.sh/uv/); it installs Python 3.14 and the three
 uv run scripts/check.py
 ```
 
-This builds `dist/` and checks it: every old path exists, nothing points at orthodox.net.nz, no third-party resources, scripts or forms, every internal link works, CSS and JS budgets, the footer, and the corrected facts. At the end it lists every open `TODO(content)` and `needs blessing:` item. The site is done only when it prints `check: OK`.
+This builds `dist/` and checks it: every path in `old_paths.txt` exists, nothing points at orthodox.net.nz, no third-party resources, scripts (so the JS budget is 0) or forms, every internal link is relative and works, the CSS budget, headings, `lang` on Russian text, the footer, and the corrected facts. At the end it lists every open `TODO(content)` and `needs blessing:` item. The site is done only when it prints `check: OK`.
 
 To look at the result:
 
@@ -49,13 +50,13 @@ uv run scripts/check.py
 git diff --stat
 ```
 
-Read the diff, then commit and push. The mirror fetches one page or file at a time with a pause between requests; the parish owns the old site, so it does not wait the 60 seconds that the old site's robots.txt asks of search engines. It stops when a correction no longer matches, and warns when the source of a frozen page has changed (then copy the change into the frozen page by hand). Files no page links to any more are deleted from `static/`.
+Read the diff, then commit and push. The mirror fetches one page or file at a time with a pause between requests; the parish owns the old site, so it does not wait the 60 seconds that the old site's robots.txt asks of search engines. It stops when a correction no longer matches or a page loses text, and warns when the source of a frozen page has changed (then copy the change into the frozen page by hand and put the new hash it prints in the page's first line). Nothing is deleted: pages and files the old site no longer links to stay, so their addresses keep working. Temporary errors of the old site are retried, and the mirror stops rather than mark a file as missing.
 
 ## Edit texts
 
 - **About, Privacy** (`local`) and **home, Contact, Clergy** (`frozen`): edit `content/pages/<page>.html` directly. Keep the first line of a frozen page: it records which version of the old page it was copied from.
 - **Other pages** (`mirror`): change the text on the old site and refresh, or add a fix to `scripts/corrections.py` (the exact text to find, the replacement, how many times it occurs and why).
-- **Menu, footer, page titles and descriptions**: `site.toml`. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
+- **Menu, footer and descriptions**: `site.toml`. A page's title is its `<h1>`: edit it in the page, or for a mirrored page set `h1` in `site.toml` and refresh. **Layout and colours**: `templates/base.html`, `static/css/site.css`.
 - Facts about the trust come only from the Charities Register; anything unknown is written as a hidden `<!-- TODO(content): … -->`, anything that needs Fr Vladimir's decision as `<!-- needs blessing: … -->`.
 
 Then run `uv run scripts/check.py`, commit and push. Until the custom domain is connected we work directly in `main`; after that, only through pull requests.

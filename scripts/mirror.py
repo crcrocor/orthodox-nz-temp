@@ -5,8 +5,11 @@ Usage: uv run scripts/mirror.py [--offline]
 Raw responses are cached in .cache/mirror/, so re-running only re-fetches what is not cached; delete the
 cache to pick up changes on the old site. --offline uses the cache only (for tuning the cleanup rules).
 Pages of kind "mirror" are rewritten every run; "frozen" pages are written only when missing, and a
-warning says when their source on the old site has changed since (compared by a hash in their first line). Every correction in scripts/corrections.py must
-match exactly as often as it says, otherwise the mirror stops.
+warning says when their source on the old site has changed since (compared by a hash in their first line).
+Every correction in scripts/corrections.py must match exactly as often as it says, otherwise the mirror
+stops. Nothing is ever deleted: pages and files the old site no longer links to stay (old paths keep
+working) and are only reported. Every path the site has ever had is recorded in old_paths.txt, which
+scripts/check.py requires to exist.
 """
 
 import argparse
@@ -33,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONTENT = ROOT / "content" / "pages"
 STATIC = ROOT / "static"
 CACHE = ROOT / ".cache" / "mirror"
+OLD_PATHS = ROOT / "old_paths.txt"
 OLD_HOSTS = {"orthodox.net.nz", "www.orthodox.net.nz"}
 # Images of ours hosted by Orthodox Web Solutions' image archive (the icon on the home page).
 OWS_IMAGES = "images.orthodoxws.com"
@@ -55,6 +59,10 @@ TODO_AUDIO = "audio recording {name} not moved to the new site yet (decided 2026
 TODO_AUDIO_BROKEN = "audio link to {name} was already broken on the old site; link removed"
 TODO_BROKEN = "this link was already broken on the old site ({url}); link removed"
 MAX_WORD_LOSS = 0.05
+# Responses worth caching; anything else (rate limits, server errors) is retried and then stops the mirror,
+# so a passing outage never turns a bulletin into a "missing" file.
+FINAL_STATUSES = {200, 404, 410}
+RETRIES = 3
 
 # The old pages are UTF-8 with a few stray Windows-1252 bytes (an em dash in a CSS comment, a » in one
 # article); decode those as Windows-1252 so they become visible text that corrections.py can fix.
@@ -68,6 +76,8 @@ DROP = {
     "script", "style", "noscript", "form", "input", "button", "select", "textarea", "iframe", "object",
     "embed", "head", "title", "meta", "link", "audio", "video", "source", "map", "area", "svg",
 }
+# Dropped elements that carried content a visitor saw; each leaves a TODO.
+EMBEDS = {"iframe", "object", "embed", "audio", "video"}
 UNWRAP = {"font", "span", "center", "html", "body", "small", "big", "sup", "sub", "nobr", "o:p", "abbr"}
 KEEP_ATTRS = {"a": {"href"}, "img": {"src", "alt", "width", "height"}, "td": {"colspan", "rowspan"},
               "th": {"colspan", "rowspan"}, "ol": {"start"}}
@@ -80,8 +90,8 @@ class Mirror:
         self.offline = offline
         self.last_request = 0.0
         self.site = tomllib.loads((ROOT / "site.toml").read_text(encoding="utf-8"))
-        self.by_source = {meta["source"].strip("/"): path for path, meta in self.site["pages"].items()
-                          if "source" in meta}
+        self.by_source = {meta["source"].strip("/").removesuffix(".html"): path
+                          for path, meta in self.site["pages"].items() if "source" in meta}
         self.articles = {}  # article/<name>.html -> /article/<name>
         self.assets = {}  # static path -> list of (page, link text)
         self.missing = set()
@@ -97,16 +107,7 @@ class Mirror:
             return json.loads(meta_file.read_text())["status"], body_file.read_bytes()
         if self.offline:
             sys.exit(f"mirror: {url} is not cached; run without --offline")
-        wait = DELAY - (time.monotonic() - self.last_request)
-        if wait > 0:
-            time.sleep(wait)
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                status, body = response.status, response.read()
-        except urllib.error.HTTPError as e:
-            status, body = e.code, e.read()
-        self.last_request = time.monotonic()
+        status, body = self.request(url, "GET")
         CACHE.mkdir(parents=True, exist_ok=True)
         body_file.write_bytes(body)
         meta_file.write_text(json.dumps({"url": url, "status": status}))
@@ -121,18 +122,33 @@ class Mirror:
             return json.loads(meta_file.read_text())["status"] == 200
         if self.offline:
             sys.exit(f"mirror: HEAD {url} is not cached; run without --offline")
-        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
-        try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                status = response.status
-                if "text/html" in response.headers.get("Content-Type", ""):
-                    status = 404
-        except urllib.error.HTTPError as e:
-            status = e.code
+        status, _ = self.request(url, "HEAD")
         CACHE.mkdir(parents=True, exist_ok=True)
         meta_file.write_text(json.dumps({"url": url, "status": status}))
         print(f"  checked {status} {url}")
         return status == 200
+
+    def request(self, url, method):
+        """(status, body), retrying rate limits, server errors and network failures."""
+        for attempt in range(1, RETRIES + 1):
+            wait = DELAY * attempt - (time.monotonic() - self.last_request)
+            if wait > 0:
+                time.sleep(wait)
+            request = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT})
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    status, body = response.status, response.read()
+                    if method == "HEAD" and "text/html" in response.headers.get("Content-Type", ""):
+                        status = 404  # the old site answers a missing file with its HTML error page
+            except urllib.error.HTTPError as e:
+                status, body = e.code, e.read()
+            except (urllib.error.URLError, TimeoutError) as e:
+                status, body = None, str(e).encode()
+            self.last_request = time.monotonic()
+            if status in FINAL_STATUSES:
+                return status, body
+            print(f"  attempt {attempt}: {status or body.decode()} for {url}")
+        sys.exit(f"mirror: the old site keeps failing for {url} (last: {status}); try again later")
 
     def fetch_page(self, path):
         status, body = self.fetch(self.site["site"]["old_site"] + path)
@@ -202,11 +218,14 @@ class Mirror:
             self.articles[new] = "/article/" + urllib.parse.quote(name, safe="+-")
             return "page", new
         key = path.strip("/").removesuffix(".html")
-        if key == "home":
+        if key in ("home", "index"):
             key = ""
         if key in self.by_source:
             return "page", self.by_source[key]
-        return "broken", url
+        status, body = self.fetch(self.site["site"]["old_site"] + urllib.parse.quote(path))
+        if status == 200 and NOT_FOUND.encode() not in body:
+            sys.exit(f"mirror: {page} links to {path}, a page of the old site that site.toml does not list; add it")
+        return "broken", path
 
     def rewrite_links(self, root, page):
         for a in root.find_all("a"):
@@ -228,13 +247,16 @@ class Mirror:
                 elif kind == "broken-audio":
                     a.insert_after(Comment(f" TODO(content): {TODO_AUDIO_BROKEN.format(name=value)} "))
                 elif kind == "broken":
-                    a.insert_after(Comment(f" TODO(content): {TODO_BROKEN.format(url=href)} "))
+                    path = urllib.parse.urlsplit(href).path or href
+                    a.insert_after(Comment(f" TODO(content): {TODO_BROKEN.format(url=path)} "))
                 a.unwrap()
 
     def rewrite_images(self, root, page):
         for img in root.find_all("img"):
             kind, target = self.resolve(img.get("src", ""), page)
             if kind != "asset":
+                if kind == "external":
+                    self.warnings.append(f"{page}: removed a third-party image {target}")
                 parent = img.parent
                 img.decompose()
                 if parent and parent.name == "a" and not has_content(parent):
@@ -285,7 +307,7 @@ class Mirror:
         html = self.fetch_page(source)
         soup, root, h1 = self.extract(html, page, is_article)
         old_words = count_words(visible_text(root))
-        clean(soup, root)
+        clean(soup, root, page)
         self.rewrite_images(root, page)
         self.rewrite_links(root, page)
         finish(soup, root)
@@ -304,23 +326,21 @@ class Mirror:
                 continue
             if meta["kind"] == "frozen" and (CONTENT / path).exists():
                 first = (CONTENT / path).read_text(encoding="utf-8").split("\n", 1)[0]
-                if self.source_hash(path, meta["source"]) not in first:
-                    self.warnings.append(f"{path} is frozen but its source changed on the old site; compare by hand")
+                now = self.source_hash(path, meta["source"])
+                if now not in first:
+                    self.warnings.append(
+                        f"{path} is frozen but its source changed on the old site (now sha256 {now}); "
+                        "merge the change by hand, then put that hash in its first line"
+                    )
                 continue
             fragments[path], old, new = self.mirror_page(path, meta["source"])
             report.append((path, old, new, meta["kind"]))
         for path, source in sorted(self.articles.items()):
             fragments[path], old, new = self.mirror_page(path, source, is_article=True)
             report.append((path, old, new, "mirror"))
-        for path, note in self.shared_file_notes():
+        for path, note in self.shared_file_notes(fragments):
             fragments[path] = fragments[path].rstrip("\n") + f"\n<!-- TODO(content): {note} -->\n"
-        for path, fragment in fragments.items():
-            self.write(path, self.site["pages"].get(path, {"kind": "mirror"})["kind"], fragment)
-        for p in sorted((CONTENT / "article").glob("*.html")):
-            if p.relative_to(CONTENT).as_posix() not in self.articles:
-                p.unlink()
-                self.warnings.append(f"removed {p.relative_to(CONTENT)}: no page links to it any more")
-        self.prune_static()
+
         print(f"\n{'page':48} {'old':>6} {'new':>6}  change")
         failed = False
         for path, old, new, kind in report:
@@ -329,11 +349,19 @@ class Mirror:
             if change < -MAX_WORD_LOSS and kind == "mirror":
                 flag, failed = "  <-- text lost", True
             print(f"{path:48} {old:6} {new:6}  {change:+.1%}{flag}")
+        if failed:
+            sys.exit("mirror: some pages lost more than 5% of their words; nothing written; check the cleanup rules")
+
+        for path, fragment in fragments.items():
+            self.write(path, self.site["pages"].get(path, {"kind": "mirror"})["kind"], fragment)
+        for p in sorted((CONTENT / "article").glob("*.html")):
+            if p.relative_to(CONTENT).as_posix() not in self.articles:
+                self.warnings.append(f"kept {p.relative_to(CONTENT)}: the old site no longer links to it")
+        self.report_unlinked_static()
+        self.record_old_paths()
         for w in self.warnings:
             print(f"warning: {w}")
         print(f"\nmirror: {len(report)} pages, {len(self.assets)} files, missing on the old site: {sorted(self.missing)}")
-        if failed:
-            sys.exit("mirror: some mirrored pages lost more than 5% of their words; check the cleanup rules")
 
     def write(self, path, kind, fragment):
         out = CONTENT / path
@@ -344,32 +372,50 @@ class Mirror:
         if not out.exists() or out.read_text(encoding="utf-8") != fragment:
             out.write_text(fragment, encoding="utf-8")
 
-    def prune_static(self):
-        """Delete downloaded files that no page links to any more (for example after a frozen page was edited)."""
-        used = set()
-        for page in CONTENT.rglob("*.html"):
-            soup = BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
-            base = posixpath.dirname(page.relative_to(CONTENT).as_posix())
-            for el in soup.find_all(["a", "img"]):
-                ref = el.get("href") or el.get("src") or ""
-                if ref and not urllib.parse.urlsplit(ref).scheme:
-                    used.add(posixpath.normpath(posixpath.join(base, ref)))
-        for folder in ("files", "images", "cache"):
-            for f in sorted((STATIC / folder).rglob("*")):
-                rel = f.relative_to(STATIC).as_posix()
-                if f.is_file() and rel not in used:
-                    f.unlink()
-                    self.warnings.append(f"removed static/{rel}: no page links to it")
+    def report_unlinked_static(self):
+        """Files no page links to any more stay, so their old URLs keep working; just say so."""
+        for rel in sorted({r for r in static_files() if not r.startswith("css/")} - linked_paths()):
+            self.warnings.append(f"kept static/{rel}: no page links to it any more")
 
-    def shared_file_notes(self):
+    def record_old_paths(self):
+        """Add every page and file path of the site to old_paths.txt; paths are never removed from it."""
+        known = set(OLD_PATHS.read_text(encoding="utf-8").split()) if OLD_PATHS.exists() else set()
+        current = {p.relative_to(CONTENT).as_posix() for p in CONTENT.rglob("*.html")}
+        for meta in self.site["pages"].values():
+            current.update(meta.get("aliases", []))
+        current.update(rel for rel in static_files() if not rel.startswith("css/"))
+        if not current <= known:
+            OLD_PATHS.write_text("\n".join(sorted(known | current)) + "\n", encoding="utf-8")
+
+    def shared_file_notes(self, fragments):
         """One file linked under different names is probably a wrong upload on the old site."""
-        for target, uses in sorted(self.assets.items()):
+        for target, all_uses in sorted(self.assets.items()):
+            # A correction may already have removed one of the links.
+            uses = [(page, text) for page, text in all_uses
+                    if f'href="{relative(target, page)}"' in fragments.get(page, "")]
             if len({text for _, text in uses if text}) > 1:
                 where = "; ".join(f"{page}: '{text}'" for page, text in uses)
                 note = f"{target} is linked as different documents ({where}); check which one it is"
                 self.warnings.append(note)
                 for page in sorted({page for page, _ in uses}):
                     yield page, note
+
+
+def static_files():
+    return [f.relative_to(STATIC).as_posix() for f in STATIC.rglob("*") if f.is_file()]
+
+
+def linked_paths():
+    """Every local path the pages in content/pages/ link to."""
+    used = set()
+    for page in CONTENT.rglob("*.html"):
+        soup = BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
+        base = posixpath.dirname(page.relative_to(CONTENT).as_posix())
+        for el in soup.find_all(["a", "img"]):
+            ref = el.get("href") or el.get("src") or ""
+            if ref and not urllib.parse.urlsplit(ref).scheme and not ref.startswith("#"):
+                used.add(posixpath.normpath(posixpath.join(base, urllib.parse.unquote(ref))))
+    return used
 
 
 # --- cleanup ----------------------------------------------------------------------------------
@@ -391,11 +437,19 @@ def count_words(text):
     return len(re.findall(r"\w+", text))
 
 
-def clean(soup, root):
+def clean(soup, root, page):
     for c in root.find_all(string=lambda s: isinstance(s, Comment)):
         c.extract()
+    for tag in root.find_all(EMBEDS):
+        src = tag.get("src") or tag.get("data") or (tag.find("source") or {}).get("src", "")
+        tag.insert_before(Comment(f" TODO(content): embedded <{tag.name}> {src} removed (no third-party resources) "))
     for tag in root.find_all(DROP):
         tag.decompose()
+    # Articles use h4/h5 for their sections; renumber the levels a page uses from h2 down, so the
+    # outline has no gaps (menu pages have no headings of their own: their titles are converted below).
+    used = sorted({el.name for el in root.find_all(re.compile(r"^h[1-6]$"))})
+    for el in root.find_all(used) if used else []:
+        el.name = f"h{min(used.index(el.name) + 2, 4)}"
     for tag in root.find_all(class_="highslide-caption"):
         tag.decompose()
     for tag in root.find_all(style=re.compile(r"display\s*:\s*none", re.I)):
@@ -413,6 +467,8 @@ def clean(soup, root):
             el.name = "h3"
     for el in root.find_all(["span", "font", "div", "p"], style=True):
         style = el["style"]
+        if "underline" in style and not RED.search(style) and (el.find_parent("a") or el.find("a")):
+            continue  # Word underlines links; that is not emphasis
         if ("underline" in style or RED.search(style)) and el.get_text(strip=True) and len(el.get_text()) < 160:
             if el.name in ("span", "font"):
                 el.name = "strong"
@@ -427,8 +483,6 @@ def clean(soup, root):
         el.name = "strong"
     for el in root.find_all("i"):
         el.name = "em"
-    for el in root.find_all(["h1", "h5", "h6"]):
-        el.name = "h2" if el.name == "h1" else "h4"
     # Attributes go before unwrapping, so nothing of the old styling survives.
     for el in [root, *root.find_all(True)]:
         allowed = KEEP_ATTRS.get(el.name, set())
@@ -558,6 +612,15 @@ def finish(soup, root):
                     el.insert_before(c.extract())
                 el.decompose()
                 changed = True
+    for strong in root.find_all("strong"):
+        move_edge_breaks_out(strong)
+    for p in root.find_all("p"):
+        parts = split_on_double_br(soup, list(p.contents))
+        for part in reversed(parts[1:]):
+            new = soup.new_tag("p")
+            for node in part:
+                new.append(node.extract())
+            p.insert_after(new)
     for block in root.find_all(["p", "li", "td", "h2", "h3", "h4", "strong"]):
         trim_breaks(block)
     for br in root.find_all("br"):
@@ -566,6 +629,18 @@ def finish(soup, root):
             nxt = nxt.next_sibling
         if isinstance(nxt, Tag) and nxt.name == "br":
             br.decompose()
+
+
+def move_edge_breaks_out(el):
+    """A <br> at the edge of an inline element separates it from its neighbour: keep it, outside."""
+    while True:
+        nodes = [n for n in el.contents if has_content(n) or (isinstance(n, Tag) and n.name == "br")]
+        if nodes and isinstance(nodes[-1], Tag) and nodes[-1].name == "br":
+            el.insert_after(nodes[-1].extract())
+        elif nodes and isinstance(nodes[0], Tag) and nodes[0].name == "br":
+            el.insert_before(nodes[0].extract())
+        else:
+            return
 
 
 def trim_breaks(el):

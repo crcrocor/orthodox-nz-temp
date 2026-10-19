@@ -13,7 +13,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markupsafe import Markup
 
@@ -26,6 +26,10 @@ CYRILLIC = re.compile(r"[Ѐ-ӿ]")
 LATIN = re.compile(r"[A-Za-z]")
 # Elements whose text decides their own language when it differs from the page's.
 LANG_BLOCKS = {"p", "h1", "h2", "h3", "h4", "li", "td", "th", "figcaption", "blockquote", "div", "dd", "dt", "ul", "ol"}
+# Containers that never take a lang themselves but whose cells do.
+LANG_CONTAINERS = {"table", "thead", "tbody", "tfoot", "tr", "section", "dl"}
+# A run of Russian inside other text: from a Cyrillic letter to the last one, with no Latin letters between.
+CYRILLIC_RUN = re.compile(r"[\u0400-\u04FF](?:[^A-Za-z<>]*[\u0400-\u04FF])?[»\".!?)…]*")
 
 
 def load_site():
@@ -54,15 +58,53 @@ def page_language(soup):
 def mark_languages(node, page_lang):
     """Put lang on the largest blocks written in the other language, as WCAG asks."""
     for child in node.children:
-        if not isinstance(child, Tag) or child.name not in LANG_BLOCKS:
+        if not isinstance(child, Tag) or child.has_attr("lang"):
             continue
-        if child.has_attr("lang"):
+        if child.name in LANG_CONTAINERS:
+            mark_languages(child, page_lang)
+            continue
+        if child.name not in LANG_BLOCKS:
             continue
         lang = script_of(child.get_text(" "))
         if lang and lang != page_lang:
             child["lang"] = lang
         else:
             mark_languages(child, page_lang)
+
+
+def effective_lang(node, page_lang):
+    holder = node if isinstance(node, Tag) and node.has_attr("lang") else node.find_parent(
+        lambda t: t.has_attr("lang")
+    )
+    return holder["lang"] if holder else page_lang
+
+
+def mark_russian_runs(soup, page_lang):
+    """Russian words left inside English text (bilingual headings, table cells) get <span lang="ru">."""
+    for text in list(soup.find_all(string=CYRILLIC)):
+        if isinstance(text, Comment) or effective_lang(text, page_lang) == "ru":
+            continue
+        parent = text.parent
+        if text.strip() and CYRILLIC_RUN.fullmatch(text.strip()) and parent.name != "[document]" and all(
+            c is text or (isinstance(c, NavigableString) and not c.strip()) for c in parent.contents
+        ):
+            parent["lang"] = "ru"
+            continue
+        pieces, last = [], 0
+        for m in CYRILLIC_RUN.finditer(text):
+            pieces.append(NavigableString(text[last:m.start()]))
+            span = soup.new_tag("span", lang="ru")
+            span.string = m.group()
+            pieces.append(span)
+            last = m.end()
+        pieces.append(NavigableString(text[last:]))
+        for piece in pieces:
+            if not (isinstance(piece, NavigableString) and not str(piece)):
+                text.insert_before(piece)
+        text.extract()
+    for img in soup.find_all("img", alt=CYRILLIC):
+        if script_of(img["alt"]) == "ru" and effective_lang(img, page_lang) != "ru":
+            img["lang"] = "ru"
 
 
 def pages(site):
@@ -86,6 +128,7 @@ def render_page(env, site, path, meta, root, current):
         sys.exit(f"build: {path} must have exactly one <h1>, found {len(h1s)}")
     lang = meta.get("lang") or page_language(soup)
     mark_languages(soup, lang)
+    mark_russian_runs(soup, lang)
     title = " ".join(h1s[0].get_text(" ").split())
     return env.get_template("base.html").render(
         site=site["site"],

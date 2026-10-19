@@ -3,6 +3,9 @@ name: Pages
 on:
   push:
     branches: [main]
+  # Pull requests are checked but never deployed (PR-only once the custom domain is connected).
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,11 +33,13 @@ jobs:
       - run: uv run scripts/check.py --base-path "$BASE_PATH"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

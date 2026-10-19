@@ -2,9 +2,10 @@
 
 Usage: uv run scripts/check.py [--base-path /orthodox-nz-temp]
 
-Checks: every old path exists; nothing points at orthodox.net.nz; no third-party resources, scripts or
-forms; every internal link resolves; CSS/JS budgets; page structure and footer; known stale facts are
-gone and required facts are present. Then lists every TODO(content) and "needs blessing:" marker.
+Checks: every path in old_paths.txt exists; nothing points at orthodox.net.nz; no third-party resources,
+scripts or forms; every internal link is relative and resolves; the CSS budget; page structure, heading
+order, language marking and the footer; known stale facts are gone and required facts are present. Then
+lists every TODO(content) and "needs blessing:" marker.
 """
 
 import argparse
@@ -19,24 +20,24 @@ from pathlib import Path
 from bs4 import BeautifulSoup, Comment
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build import CONTENT, DIST, STATIC, build, pages  # noqa: E402
+from build import CONTENT, CYRILLIC, DIST, ROOT, STATIC, build  # noqa: E402
 
-CSS_BUDGET = 40 * 1024  # gzip bytes per page (orthodox-nz docs/design/compat.md)
-JS_BUDGET = 50 * 1024
+# gzip bytes per page (orthodox-nz docs/design/compat.md). The JS budget (50 KB) needs no measuring:
+# any <script> fails the check.
+CSS_BUDGET = 40 * 1024
 OLD_DOMAIN = "orthodox.net.nz"
 RESOURCE_ATTRS = ("src", "srcset", "poster", "data", "background", "action", "formaction")
 FORBIDDEN_TAGS = ("script", "form", "iframe", "object", "embed", "audio", "video", "source", "track", "base",
-                  "input", "frame", "frameset", "applet", "portal")
+                  "input", "button", "select", "textarea", "frame", "frameset", "applet", "portal", "svg")
 LINK_SCHEMES = ("http", "https", "mailto", "tel")
 GENERIC_ALT = {"", "image", "img", "photo", "picture"}
-STALE = [
-    "Mt Albert",
-    "Mount Albert",
-    "Taylors",
-    "frvlad@",
-    "Auckland 1025",
-    "Митрополит Иларион (Капраль) является Первоиерархом",
-    "Metropolitan Hilarion (Kapral), is the First Hierarch",
+STALE = [  # case-insensitive patterns
+    r"m(oun)?t\.?\s+albert",
+    r"taylors",
+    r"frvlad@",
+    r"auckland\s+1025",
+    r"Митрополит Иларион \(Капраль\) является Первоиерархом",
+    r"Metropolitan Hilarion \(Kapral\), is the First Hierarch",
 ]
 PURPOSE = (
     "A church community created and maintained to serve the spiritual needs of the Russian Orthodox community "
@@ -108,16 +109,17 @@ def check_css_file(path, report):
             report.fail(rel, f"loads a third-party resource: {url}")
 
 
-def check_page(path, html, report, base_path, required_paths):
+def check_page(path, html, report, base_path, is_404=False):
+    """Check one built page; the 404 page alone uses links from the site root (GitHub serves it at any depth)."""
     page = path.relative_to(DIST).as_posix()
     soup = BeautifulSoup(html, "html.parser")
-    css_bytes = js_bytes = img_bytes = 0
+    css_bytes = img_bytes = 0
 
-    if OLD_DOMAIN in html:
+    if OLD_DOMAIN in html.lower():
         report.fail(page, f"mentions {OLD_DOMAIN}")
-    for text in STALE:
-        if text in html:
-            report.fail(page, f"stale fact still present: {text!r}")
+    for pattern in STALE:
+        if re.search(pattern, html, re.I):
+            report.fail(page, f"stale fact still present: {pattern!r}")
 
     for tag in soup.find_all(FORBIDDEN_TAGS):
         report.fail(page, f"<{tag.name}> is not allowed (no scripts, forms or embeds)")
@@ -132,6 +134,8 @@ def check_page(path, html, report, base_path, required_paths):
             for url in urls:
                 if not is_local(url) and not url.startswith("data:"):
                     report.fail(page, f"<{tag.name} {attr}> loads a third-party resource: {url}")
+                elif url.startswith("/") and not is_404:
+                    report.fail(page, f"<{tag.name} {attr}> must be relative: {url}")
                 elif attr in ("src", "srcset", "poster", "data", "background"):
                     target = resolve(url, page, base_path)
                     if target and not (DIST / target).is_file():
@@ -158,6 +162,8 @@ def check_page(path, html, report, base_path, required_paths):
         if not is_local(href):
             report.fail(page, f"<link rel={link.get('rel')}> points to another site: {href}")
             continue
+        if href.startswith("/") and not is_404:
+            report.fail(page, f"<link> must be relative: {href}")
         target = resolve(href, page, base_path)
         if not target or not (DIST / target).is_file():
             report.fail(page, f"<link> points to a missing file: {href}")
@@ -180,6 +186,8 @@ def check_page(path, html, report, base_path, required_paths):
             if href[1:] and href[1:] not in ids:
                 report.fail(page, f"anchor {href} has no target")
             continue
+        if href.startswith("/") and not is_404:
+            report.fail(page, f"links must be relative (the site lives under a path on github.io): {href}")
         target = resolve(href, page, base_path)
         if target and not (DIST / target).is_file():
             report.fail(page, f"broken link: {href}")
@@ -188,8 +196,24 @@ def check_page(path, html, report, base_path, required_paths):
 
     if css_bytes > CSS_BUDGET:
         report.fail(page, f"CSS {css_bytes} B gzip > budget {CSS_BUDGET} B")
-    if js_bytes > JS_BUDGET:
-        report.fail(page, f"JS {js_bytes} B gzip > budget {JS_BUDGET} B")
+
+    main = soup.find("main")
+    level = 1
+    for h in main.find_all(re.compile(r"^h[1-6]$")) if main else []:
+        new = int(h.name[1])
+        if new > level + 1:
+            report.fail(page, f"heading skips a level: <{h.name}> {h.get_text(' ', strip=True)[:50]!r} after <h{level}>")
+        level = new
+    for text in soup.body.find_all(string=CYRILLIC) if soup.body else []:
+        if isinstance(text, Comment):
+            continue
+        holder = text.find_parent(lambda t: t.has_attr("lang"))
+        if (holder["lang"] if holder else "") != "ru" and CYRILLIC.search(text):
+            report.fail(page, f"Russian text without lang=\"ru\": {text.strip()[:50]!r}")
+    for img in soup.find_all("img", alt=CYRILLIC):
+        holder = img if img.has_attr("lang") else img.find_parent(lambda t: t.has_attr("lang"))
+        if (holder["lang"] if holder else "") != "ru":
+            report.fail(page, f"Russian alt text without lang=\"ru\": {img['alt'][:50]!r}")
 
     h1s = soup.find_all("h1")
     if len(h1s) != 1:
@@ -239,22 +263,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-path", default="", help="path of the site on its host, e.g. /orthodox-nz-temp")
     base_path = parser.parse_args().base_path.rstrip("/")
-    site = build(base_path)
+    build(base_path)
     report = Report()
 
-    required_paths = set()
-    for path, meta in pages(site).items():
-        required_paths.add(path)
-        required_paths.update(meta.get("aliases", []))
-    required_paths.add("404.html")
-    for path in sorted(required_paths):
+    # old_paths.txt only grows (scripts/mirror.py adds to it), so a page or file that once existed
+    # cannot silently disappear.
+    for path in [*(ROOT / "old_paths.txt").read_text(encoding="utf-8").split(), "404.html"]:
         if not (DIST / path).is_file():
-            report.fail(path, "missing in dist/")
+            report.fail(path, "missing in dist/ (listed in old_paths.txt)")
 
     weights = []
     for html_path in sorted(DIST.rglob("*.html")):
-        page_base = base_path if html_path.name == "404.html" and html_path.parent == DIST else ""
-        img = check_page(html_path, html_path.read_text(encoding="utf-8"), report, page_base, required_paths)
+        is_404 = html_path == DIST / "404.html"
+        img = check_page(html_path, html_path.read_text(encoding="utf-8"), report, base_path if is_404 else "", is_404)
         weights.append((img, html_path.relative_to(DIST).as_posix()))
     for css in sorted(DIST.rglob("*.css")):
         check_css_file(css, report)

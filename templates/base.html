@@ -9,11 +9,11 @@
 <link rel="stylesheet" href="{{ root }}css/site.css">
 </head>
 <body>
-<a class="skip" href="#content">Skip to content</a>
+<a class="skip" href="#content" lang="en">Skip to content</a>
 <header class="masthead">
   <div class="wrap">
   <a class="brand" href="{{ root }}index.html">
-    <span class="brand-name">{{ site.name }}</span>
+    <span class="brand-name" lang="en">{{ site.name }}</span>
     <span class="brand-name-ru" lang="ru">{{ site.name_ru }}</span>
   </a>
   </div>
@@ -24,13 +24,13 @@
   {%- endfor %}
 {%- endmacro %}
 <div class="layout wrap">
-  <nav class="menu menu-wide" aria-label="Menu">
+  <nav class="menu menu-wide" aria-label="Menu" lang="en">
     <ul>{{ menu_items() }}
     </ul>
   </nav>
   <details class="menu menu-narrow">
-    <summary>Menu <span lang="ru">Меню</span></summary>
-    <nav aria-label="Menu">
+    <summary><span lang="en">Menu</span> <span lang="ru">Меню</span></summary>
+    <nav aria-label="Menu" lang="en">
       <ul>{{ menu_items() }}
       </ul>
     </nav>
@@ -39,7 +39,7 @@
 {{ content }}
   </main>
 </div>
-<footer class="site-footer">
+<footer class="site-footer" lang="en">
   <div class="wrap">
   <p>{{ site.legal_name }}, registered charity <a href="{{ site.register_url }}">{{ site.charity_number }}</a></p>
   <ul class="footer-links">
