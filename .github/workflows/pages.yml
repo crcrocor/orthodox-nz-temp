@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [main]
-  # Pull requests are checked but never deployed (PR-only once the custom domain is connected).
+  # Pull requests are checked but never deployed; since the custom domain was connected, changes reach main only through them.
   pull_request:
     branches: [main]
   workflow_dispatch:

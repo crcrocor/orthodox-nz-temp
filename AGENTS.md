@@ -34,11 +34,11 @@ Temporary static site for orthodox.nz (stage 0, task 008 in crcrocor/orthodox-nz
 - `content/pages/` page bodies (English), `content/pages/ru/` Russian versions · `templates/` the one page template · `static/` CSS, fonts (`static/fonts/`, with their licence), files and images (old paths kept) · `scripts/corrections.py` fixes applied to mirrored pages · `.github/workflows/pages.yml` deploy.
 
 ## Workflow
-- Until the custom domain is connected, work directly in `main`. After that, only through pull requests.
+- The custom domain orthodox.nz is connected (2026-10-19): changes go through pull requests, never straight to `main` (every push to `main` deploys).
 - Evidence before claims: say "done" or "works" only with fresh output of `uv run scripts/check.py` (or a screenshot) taken after the last change. Otherwise write "not verified".
 - Make the smallest change that meets the task; follow the nearest existing pattern; no new dependency without the developer's OK.
 - Keep old paths (`schedule.html`, `files/…`, `article/…`) working: the portal will redirect to them later.
-- Links are relative, so the site works both at crcrocor.github.io/orthodox-nz-temp/ and at orthodox.nz.
+- Links are relative, so the site works at orthodox.nz and at any other address or path.
 
 ## Content rules
 - Never invent facts about the parish, clergy, services, people or amounts. Write `<!-- TODO(content): what is needed -->`. Here TODO and `needs blessing:` markers are hidden HTML comments, unlike the portal's dev site, because this site is public; `scripts/check.py` prints them all.
