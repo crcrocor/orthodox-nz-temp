@@ -1,0 +1,137 @@
+# Every page of the site. Kinds:
+#   mirror — regenerated from orthodox.net.nz by scripts/mirror.py (edit the old site or scripts/corrections.py)
+#   frozen — seeded once by the mirror, then edited by hand in content/pages/ (the mirror never overwrites it)
+#   local  — written by hand in content/pages/
+# `source` is the page's path on orthodox.net.nz; `h1` overrides the heading taken from the old <title>;
+# `lang` overrides the language detected from the text; `aliases` are extra old paths with the same page.
+# Articles under article/ are mirror pages found through the links on about_orthodoxy.html.
+
+[site]
+name = "Resurrection of Christ Russian Orthodox Church"
+name_ru = "Храм Воскресения Христова в Окланде"
+legal_name = "Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust"
+charity_number = "CC42458"
+register_url = "https://register.charities.govt.nz/Charity/CC42458"
+description = "Russian Orthodox parish of the Resurrection of Christ (Russian Orthodox Church Outside of Russia), 455–461 Dominion Rd, Mt Eden, Auckland."
+old_site = "https://orthodox.net.nz"
+
+# The menu of the old site, in its order and with its labels.
+[[menu]]
+label = "Home"
+path = "index.html"
+[[menu]]
+label = "Service Schedule"
+path = "schedule.html"
+[[menu]]
+label = "News and Photos"
+path = "news.html"
+[[menu]]
+label = "Russian Newsletter"
+path = "pravmir.html"
+[[menu]]
+label = "English Bulletin"
+path = "newsletter.html"
+[[menu]]
+label = "Donations"
+path = "donations.html"
+[[menu]]
+label = "Benevolent Fund"
+path = "benevolent_fund.html"
+[[menu]]
+label = "Russian Orthodox School"
+path = "school.html"
+[[menu]]
+label = "Символ Веры"
+path = "creed.html"
+lang = "ru"
+[[menu]]
+label = "Online Catechism"
+path = "onlinecatechism.html"
+[[menu]]
+label = "About Orthodoxy"
+path = "about_orthodoxy.html"
+[[menu]]
+label = "Clergy"
+path = "clergy.html"
+[[menu]]
+label = "Contact Information"
+path = "contact.html"
+[[menu]]
+label = "Links"
+path = "links.html"
+
+[[footer]]
+label = "About"
+path = "about.html"
+[[footer]]
+label = "Contact"
+path = "contact.html"
+[[footer]]
+label = "Privacy"
+path = "privacy.html"
+
+[pages."index.html"]
+kind = "frozen"
+source = "/"
+h1 = "Resurrection of Christ Russian Orthodox Church"
+aliases = ["home.html"]
+
+[pages."schedule.html"]
+kind = "mirror"
+source = "/schedule"
+
+[pages."news.html"]
+kind = "mirror"
+source = "/news.html"
+
+[pages."pravmir.html"]
+kind = "mirror"
+source = "/pravmir"
+
+[pages."newsletter.html"]
+kind = "mirror"
+source = "/newsletter"
+
+[pages."donations.html"]
+kind = "mirror"
+source = "/donations"
+
+[pages."benevolent_fund.html"]
+kind = "mirror"
+source = "/benevolent_fund"
+
+[pages."school.html"]
+kind = "mirror"
+source = "/school"
+
+[pages."creed.html"]
+kind = "mirror"
+source = "/creed"
+
+[pages."onlinecatechism.html"]
+kind = "mirror"
+source = "/onlinecatechism"
+
+[pages."about_orthodoxy.html"]
+kind = "mirror"
+source = "/about_orthodoxy"
+
+[pages."clergy.html"]
+kind = "frozen"
+source = "/clergy"
+
+[pages."contact.html"]
+kind = "frozen"
+source = "/contact"
+
+[pages."links.html"]
+kind = "mirror"
+source = "/links"
+
+[pages."about.html"]
+kind = "local"
+description = "Church of the Resurrection of Christ Russian Orthodox Church Abroad Trust, registered charity CC42458: who runs this website, its purpose and how to reach us."
+
+[pages."privacy.html"]
+kind = "local"
+description = "Privacy policy of the website of the Church of the Resurrection of Christ, Auckland."

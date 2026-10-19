@@ -1,0 +1,13 @@
+[project]
+name = "orthodox-nz-temp"
+version = "0.1.0"
+description = "Temporary static site for orthodox.nz, built from the old parish site orthodox.net.nz"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "beautifulsoup4>=4.13",
+    "html5lib>=1.1",
+    "jinja2>=3.1",
+]
+
+[tool.uv]
+package = false
