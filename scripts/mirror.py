@@ -321,9 +321,9 @@ class Mirror:
         if "�" in body:
             sys.exit(f"mirror: {page}: the extracted text contains U+FFFD (bad encoding)")
         fragment = f"<h1>{escape(h1)}</h1>\n{body}\n"
-        fragment = apply_corrections(page, fragment)
+        # Counted before the corrections: the guard is for the cleanup rules, the corrections are deliberate.
         new_words = count_words(BeautifulSoup(fragment, "html.parser").get_text(" ")) - count_words(h1)
-        return fragment, old_words, new_words
+        return apply_corrections(page, fragment), old_words, new_words
 
     def run(self):
         fragments, report = {}, []

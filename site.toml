@@ -9,6 +9,7 @@
 #   mirror — regenerated from orthodox.net.nz by scripts/mirror.py (edit the old site or scripts/corrections.py)
 #   frozen — seeded once by the mirror, then edited by hand in content/pages/ (the mirror never overwrites it)
 #   local  — written by hand in content/pages/
+# A menu item has either `path` (a page of this site) or `url` (another site).
 # `source` is the page's path on orthodox.net.nz; `h1` overrides the heading taken from the old <title>
 # (applied by the mirror); `h1_ru` is the heading of the Russian version of a shared page; `description`
 # and `description_ru` override the default meta description.
@@ -66,7 +67,7 @@ items = [
     { path = "newsletter.html", en = "English Bulletin", ru = "Бюллетень на английском" },
     { path = "donations.html", en = "Donations", ru = "Пожертвования" },
     { path = "benevolent_fund.html", en = "Benevolent Fund", ru = "Благотворительный фонд" },
-    { path = "school.html", en = "Russian Orthodox School", ru = "Русская православная школа" },
+    { url = "http://roei.org.nz/", en = "Russian Orthodox Educational Institute", ru = "Русский православный образовательный институт" },
     { path = "clergy.html", en = "Clergy", ru = "Духовенство" },
     { path = "contact.html", en = "Contact Information", ru = "Контакты" },
 ]
@@ -137,7 +138,8 @@ h1_ru = "Благотворительный фонд"
 [pages."school.html"]
 kind = "mirror"
 source = "/school"
-h1_ru = "Русская православная школа"
+h1 = "Russian Orthodox Educational Institute"
+h1_ru = "Русский православный образовательный институт"
 
 [pages."creed.html"]
 kind = "mirror"

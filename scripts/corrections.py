@@ -40,6 +40,15 @@ CORRECTIONS = [
         "why": "a stray Windows-1252 byte on the old site (shown there as �)",
     },
     {
+        "page": "school.html",
+        "find": '<a href="http://rusorthodoxschool.wixsite.com/rusorthodoxschool">'
+        "http://rusorthodoxschool.wixsite.com/rusorthodoxschool</a>",
+        "replace": '<a href="http://roei.org.nz/">http://roei.org.nz/</a>',
+        "count": 1,
+        "why": "the school is the Russian Orthodox Educational Institute (ROEI), whose site is roei.org.nz "
+        "(the developer, 2026-10-19)",
+    },
+    {
         "page": "schedule.html",
         "find": ' <a href="files/--.pdf">текст</a>',
         "replace": ' <!-- TODO(content): the text of the Akathist "Нечаянная Радость" is missing: the old link /files/--.pdf '

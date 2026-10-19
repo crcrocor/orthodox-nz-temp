@@ -167,10 +167,10 @@ def prepare_menu(site, lang, page_root, current):
             label = item[lang]
             label_lang = script_of(label)
             items.append({
-                "href": page_root + item["path"],
+                "href": item.get("url") or page_root + item["path"],
                 "label": label,
                 "lang": label_lang if label_lang and label_lang != lang else None,
-                "current": item["path"] == current,
+                "current": item.get("path") == current,
             })
         groups.append({"title": title, "items": items})
     footer = [{"href": page_root + f["path"], "label": f[lang], "current": f["path"] == current}
